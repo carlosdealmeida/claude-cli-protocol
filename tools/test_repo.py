@@ -103,5 +103,32 @@ class ReleaseDocs(unittest.TestCase):
         self.assertIn("NUGET_USER", text)
 
 
+class Policies(unittest.TestCase):
+    SECURITY = ("SECURITY.md", "SECURITY.en.md", "SECURITY.es.md")
+
+    def test_three_languages_each_with_the_language_line(self):
+        for base in ("SECURITY", "CONTRIBUTING"):
+            names = [f"{base}.md", f"{base}.en.md", f"{base}.es.md"]
+            for name, label in zip(names, LANGUAGE_LABELS[:3]):
+                line = read(name).splitlines()[2]
+                self.assertIn(f"**{label}**", line, name)
+                for other, other_label in zip(names, LANGUAGE_LABELS[:3]):
+                    if other != name:
+                        self.assertIn(f"[{other_label}]({other})", line, name)
+
+    def test_security_points_to_the_private_report_and_states_the_deadlines(self):
+        for name in self.SECURITY:
+            text = read(name)
+            self.assertIn(ADVISORIES, text, name)
+            self.assertRegex(text, r"\b5\b", name)    # receipt confirmed within 5 working days
+            self.assertRegex(text, r"\b10\b", name)   # first assessment within 10 working days
+
+    def test_security_scope_names_what_the_library_does(self):
+        for name in self.SECURITY:
+            text = read(name)
+            for term in ("permission_suggestions", "CLAUDE_CONFIG_DIR", "stderr"):
+                self.assertIn(term, text, name)
+
+
 if __name__ == "__main__":
     unittest.main()
