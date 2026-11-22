@@ -68,5 +68,40 @@ class BaseFiles(unittest.TestCase):
                 self.assertTrue((ROOT / rel).parent.joinpath(link).exists(), f"{rel} -> {link}")
 
 
+ADVISORIES = "https://github.com/carlosdealmeida/claude-cli-protocol/security/advisories/new"
+
+
+def load_yaml(rel):
+    """The YAML document of a file of the repository; the test is skipped without PyYAML."""
+    try:
+        import yaml
+    except ImportError:
+        raise unittest.SkipTest("PyYAML not installed")
+    return yaml.safe_load(read(rel))
+
+
+class ReleaseDocs(unittest.TestCase):
+    def test_changelog_follows_keep_a_changelog_and_has_nothing_released(self):
+        text = read("CHANGELOG.md")
+        self.assertIn("https://keepachangelog.com/en/1.1.0/", text)
+        self.assertIn("## [Unreleased]", text)
+        self.assertNotRegex(text, r"## \[\d+\.\d+\.\d+\]")
+
+    def test_issue_templates(self):
+        config = load_yaml(".github/ISSUE_TEMPLATE/config.yml")
+        self.assertIs(config["blank_issues_enabled"], False)
+        self.assertEqual(config["contact_links"][0]["url"], ADVISORIES)
+        bug = load_yaml(".github/ISSUE_TEMPLATE/bug_report.yml")
+        ids = [item.get("id") for item in bug["body"]]
+        for wanted in ("description", "steps", "library", "lib-version", "claude-version", "os"):
+            self.assertIn(wanted, ids)
+        self.assertEqual(load_yaml(".github/ISSUE_TEMPLATE/feature_request.yml")["labels"], ["enhancement"])
+
+    def test_releasing_names_the_tag_and_the_only_secret_it_needs(self):
+        text = read("RELEASING.md")
+        self.assertIn("v<semver>", text)
+        self.assertIn("NUGET_USER", text)
+
+
 if __name__ == "__main__":
     unittest.main()

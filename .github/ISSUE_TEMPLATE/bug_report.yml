@@ -1,0 +1,81 @@
+name: Relatar um bug
+description: Reporte um comportamento incorreto de uma lib, da especificação ou do site
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por reportar! Para falhas de **segurança**, não use este formulário —
+        siga a [política de segurança](https://github.com/carlosdealmeida/claude-cli-protocol/security/policy).
+
+        Antes de colar uma linha do stream-json ou um trecho de sessão, tire o que é seu:
+        nome de usuário, pastas, e-mail e qualquer credencial.
+  - type: textarea
+    id: description
+    attributes:
+      label: Descrição do bug
+      description: O que aconteceu e o que você esperava que acontecesse?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passos para reproduzir
+      description: Se for uma linha que a lib leu errado, cole a linha (sem dados pessoais).
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: library
+    attributes:
+      label: Onde está o problema
+      options:
+        - Lib .NET
+        - Lib Delphi
+        - Especificação ou site
+        - Fixtures
+    validations:
+      required: true
+  - type: input
+    id: lib-version
+    attributes:
+      label: Versão da lib
+      placeholder: "0.1.0"
+    validations:
+      required: false
+  - type: input
+    id: target
+    attributes:
+      label: Target ou compilador
+      placeholder: "net6.0, netstandard2.0 (.NET Framework 4.8), Delphi 10.1 Berlin…"
+    validations:
+      required: false
+  - type: input
+    id: claude-version
+    attributes:
+      label: Versão do Claude Code
+      description: A saída de `claude --version`. O protocolo muda entre versões do CLI.
+      placeholder: "2.1.310"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Sistema operacional
+      options:
+        - Windows
+        - macOS
+        - Linux
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Logs ou contexto adicional
+      description: Mensagens de erro, a pilha da exceção ou qualquer informação útil.
+    validations:
+      required: false
