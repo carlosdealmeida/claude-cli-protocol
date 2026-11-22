@@ -1,0 +1,19 @@
+# Every text file is LF in the repository and in the checkout, so a Windows checkout
+# never commits CRLF. The recordings in fixtures/ are compared byte by byte.
+* text=auto eol=lf
+
+# Binary assets: never normalized.
+*.png binary
+*.gif binary
+*.ico binary
+*.nupkg binary
+*.snupkg binary
+*.svg text eol=lf
+
+# Delphi sources keep CRLF: the IDE of 10.1 Berlin loses the line of a breakpoint with LF.
+*.pas text eol=crlf
+*.dpr text eol=crlf
+*.dpk text eol=crlf
+*.dproj text eol=crlf
+*.dfm text eol=crlf
+*.inc text eol=crlf

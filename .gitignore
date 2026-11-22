@@ -1,0 +1,37 @@
+# .NET
+bin/
+obj/
+*.user
+.vs/
+*.nupkg
+*.snupkg
+artifacts/
+
+# Python
+__pycache__/
+.pytest_cache/
+
+# Node (the site keeps its own .gitignore too)
+node_modules/
+
+# Delphi
+*.dcu
+__history/
+__recovery/
+*.local
+*.identcache
+
+# Each one's private words for the fixture privacy test
+libs/dotnet/tests/private-words.txt
+
+# Output of docs/sweep_issues.py
+sweep_results.json
+
+# Tools and editors
+.DS_Store
+.idea/
+docs/superpowers/
+.superpowers/
+.worktrees/
+.claude/settings.local.json
+.claude/worktrees/
