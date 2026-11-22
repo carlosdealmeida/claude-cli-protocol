@@ -167,5 +167,24 @@ class Readmes(unittest.TestCase):
             self.assertNotIn("img.shields.io/nuget", text, name)
 
 
+class Layout(unittest.TestCase):
+    def test_spec_folders_exist_with_a_readme(self):
+        for rel in ("fixtures/README.md", "examples/README.md", "libs/delphi/README.md"):
+            self.assertTrue((ROOT / rel).is_file(), rel)
+
+    def test_delphi_readme_states_the_floor_and_what_stays_out(self):
+        text = read("libs/delphi/README.md")
+        self.assertIn("10.1 Berlin", text)
+        self.assertIn("VCL", text)
+
+    def test_glossary_covers_the_five_languages(self):
+        header = next(line for line in read("docs/i18n/glossary.md").splitlines() if line.startswith("| "))
+        for column in ("pt-BR", "en", "es", "zh-CN", "zh-TW"):
+            self.assertIn(column, header)
+
+    def test_roadmap_has_the_status_legend(self):
+        self.assertIn("Status", read("docs/ROADMAP.md"))
+
+
 if __name__ == "__main__":
     unittest.main()

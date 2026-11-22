@@ -61,7 +61,7 @@ O português é a fonte. Uma mudança no `README.md` vale para os cinco (`README
 deles fica com menos seções. `SECURITY.md` e `CONTRIBUTING.md` têm três versões: português, inglês
 e espanhol.
 
-Os termos estão no glossário, em `docs/i18n/glossary.md`. As traduções foram feitas por IA e ainda
+Os termos estão no glossário, em [docs/i18n/glossary.md](docs/i18n/glossary.md). As traduções foram feitas por IA e ainda
 não foram revisadas por falante nativo: correção é muito bem-vinda, e o melhor lugar para começar
 é o glossário.
 

@@ -63,7 +63,7 @@ El portugués es la fuente. Un cambio en `README.md` vale para los cinco (`READM
 de ellos queda con menos secciones. `SECURITY.md` y `CONTRIBUTING.md` tienen tres versiones:
 portugués, inglés y español.
 
-Los términos están en el glosario, en `docs/i18n/glossary.md`. Las traducciones fueron hechas por
+Los términos están en el glosario, en [docs/i18n/glossary.md](docs/i18n/glossary.md). Las traducciones fueron hechas por
 IA y aún no han sido revisadas por un hablante nativo: las correcciones son muy bienvenidas, y el
 glosario es el mejor lugar para empezar.
 

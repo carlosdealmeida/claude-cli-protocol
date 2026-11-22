@@ -62,7 +62,7 @@ Portuguese is the source. A change to `README.md` applies to all five (`README.e
 one of them ends up with fewer sections. `SECURITY.md` and `CONTRIBUTING.md` have three versions:
 Portuguese, English and Spanish.
 
-The terms are in the glossary, at `docs/i18n/glossary.md`. The translations were produced by AI and
+The terms are in the glossary, at [docs/i18n/glossary.md](docs/i18n/glossary.md). The translations were produced by AI and
 have not yet been reviewed by a native speaker: corrections are very welcome, and the glossary is
 the best place to start.
 
