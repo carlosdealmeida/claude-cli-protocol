@@ -1,0 +1,88 @@
+name: Re-record fixtures
+
+# Records the scenarios again with the real `claude -p`, once a week, and opens a pull request when a
+# recording changes: a change in the CLI shows up here before anyone finds it in use.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays, 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  record:
+    name: Record and open a pull request
+    # the recorder replaces Windows paths (folder, home, user) with the demo ones
+    runs-on: windows-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      # only whether the key exists; the key itself goes to the recording step alone
+      HAS_API_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      # The recorder arrives in phase 2. Until then, and whenever the secret is missing, the job says
+      # so and ends without an error.
+      - name: Is there a recorder and a key?
+        id: guard
+        run: |
+          if [ ! -f tools/gravar.py ]; then
+            echo "::notice::tools/gravar.py is not in the repository yet (it arrives in phase 2): nothing was recorded."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          elif [ "$HAS_API_KEY" != "true" ]; then
+            echo "::notice::The secret ANTHROPIC_API_KEY is not set: nothing was recorded."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v7
+        if: steps.guard.outputs.run == 'true'
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v7
+        if: steps.guard.outputs.run == 'true'
+        with:
+          python-version: "3.x"
+
+      - name: Install Claude Code
+        if: steps.guard.outputs.run == 'true'
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          claude --version
+
+      - name: Record every scenario
+        if: steps.guard.outputs.run == 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python -I tools/gravar.py --todos --saida fixtures
+
+      # A pull request opened with GITHUB_TOKEN does not start other workflows: run the CI on it by hand
+      # (close and reopen it, or push an empty commit) before merging.
+      - name: Open a pull request when a recording changed
+        if: steps.guard.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -z "$(git status --porcelain fixtures)" ]; then
+            echo "::notice::No recording changed."
+            exit 0
+          fi
+          branch="fixtures/$(date -u +%Y-%m-%d)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add fixtures
+          git commit -m "test(fixtures): regravação de $(date -u +%Y-%m-%d) com $(claude --version)"
+          git push -u origin "$branch"
+          gh pr create --base master --head "$branch" \
+            --title "Fixtures regravadas em $(date -u +%Y-%m-%d)" \
+            --body "As gravações mudaram na regravação semanal, feita com $(claude --version). Leia o diff: uma mudança aqui é uma mudança do CLI."

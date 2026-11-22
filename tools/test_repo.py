@@ -186,5 +186,44 @@ class Layout(unittest.TestCase):
         self.assertIn("Status", read("docs/ROADMAP.md"))
 
 
+class Workflows(unittest.TestCase):
+    WORKFLOWS = ("ci.yml", "release.yml", "pages.yml", "fixtures.yml")
+    ALLOWED_SECRETS = {"ANTHROPIC_API_KEY", "NUGET_USER", "GITHUB_TOKEN"}
+
+    def test_the_four_workflows_parse_and_declare_permissions(self):
+        for name in self.WORKFLOWS:
+            doc = load_yaml(f".github/workflows/{name}")
+            self.assertIn("permissions", doc, name)
+            self.assertIn("jobs", doc, name)
+
+    def test_workflows_only_name_known_secrets(self):
+        for name in self.WORKFLOWS:
+            used = set(re.findall(r"secrets\.([A-Za-z_][A-Za-z0-9_]*)", read(f".github/workflows/{name}")))
+            self.assertLessEqual(used, self.ALLOWED_SECRETS, name)
+
+    def test_the_api_key_is_named_only_by_the_fixtures_workflow(self):
+        for name in self.WORKFLOWS:
+            has = "secrets.ANTHROPIC_API_KEY" in read(f".github/workflows/{name}")
+            self.assertEqual(has, name == "fixtures.yml", name)
+
+    def test_no_api_key_in_the_repo(self):
+        pattern = re.compile(r"sk-ant-[A-Za-z0-9_-]{20,}")
+        for rel in tracked():
+            data = (ROOT / rel).read_bytes()
+            if b"\0" in data[:8000]:
+                continue
+            self.assertIsNone(pattern.search(data.decode("utf-8", "replace")), rel)
+
+    def test_branch_filters_name_master(self):
+        for name in ("ci.yml", "pages.yml"):
+            self.assertIn("master", read(f".github/workflows/{name}"), name)
+
+    def test_ci_runs_what_the_docs_tell_a_contributor_to_run(self):
+        ci = read(".github/workflows/ci.yml")
+        for command in ("dotnet build libs/dotnet -c Release", "dotnet test libs/dotnet -c Release --no-build",
+                        "tools/check_package.py", "tools/test_repo.py", "npm run build", "npm run check"):
+            self.assertIn(command, ci)
+
+
 if __name__ == "__main__":
     unittest.main()

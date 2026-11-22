@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+# CI only reads the repository and builds: nothing here writes to the GitHub API.
+permissions:
+  contents: read
+
+jobs:
+  dotnet:
+    name: .NET library (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        # windows runs the tests on net6.0 and net48 (the netstandard2.0 build); ubuntu on net6.0
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - uses: actions/checkout@v7
+
+      # the SDK 8 builds (global.json); the 6.0.x install brings the runtime the net6.0 tests run on
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            6.0.x
+            8.0.x
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.x"
+
+      - name: Build
+        run: dotnet build libs/dotnet -c Release
+
+      - name: Test
+        run: dotnet test libs/dotnet -c Release --no-build
+
+      - name: Pack
+        run: dotnet pack libs/dotnet/src/ClaudeCliProtocol -c Release --no-build -o artifacts
+
+      - name: Check the package
+        shell: bash
+        run: python -I tools/check_package.py artifacts/ClaudeCliProtocol.*[0-9].nupkg
+
+  # The Delphi library (phase 6) gets its job here: build with the compiler and run the same fixtures.
+
+  site:
+    name: Site build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Astro 7.4 needs Node >= 22.23.4 (engines)
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - run: npm ci
+        working-directory: site
+
+      - run: npm run build
+        working-directory: site
+
+      # the five locales, the language of each page and the links under the base path
+      - run: npm run check
+        working-directory: site
+
+  repo:
+    name: Repository structure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.x"
+
+      # the tests that read YAML are skipped without it
+      - run: python -m pip install pyyaml
+
+      - run: python -I tools/test_repo.py -v

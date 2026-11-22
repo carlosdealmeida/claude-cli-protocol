@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Test, pack, GitHub Release and NuGet
+    runs-on: ubuntu-latest
+    # contents: write creates the GitHub Release. id-token: write is for Trusted Publishing: GitHub's OIDC
+    # token is exchanged on nuget.org for a one-hour API key, so no key is stored here.
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+      # the nuget.org profile name, not the e-mail; without it the publish steps are skipped
+      NUGET_USER: ${{ secrets.NUGET_USER }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            6.0.x
+            8.0.x
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.x"
+
+      # the tag v1.2.3 must be the Version of the package
+      - name: Check the tag against the version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version="$(dotnet msbuild libs/dotnet/src/ClaudeCliProtocol -getProperty:Version)"
+          if [ "$tag" != "$version" ]; then
+            echo "::error::The tag $GITHUB_REF_NAME does not match the package Version $version in libs/dotnet/src/ClaudeCliProtocol/ClaudeCliProtocol.csproj."
+            exit 1
+          fi
+          echo "Tag $GITHUB_REF_NAME matches Version $version."
+
+      - name: Build
+        run: dotnet build libs/dotnet -c Release
+
+      - name: Test
+        run: dotnet test libs/dotnet -c Release --no-build
+
+      - name: Pack
+        run: dotnet pack libs/dotnet/src/ClaudeCliProtocol -c Release --no-build -o artifacts
+
+      - name: Check the package
+        run: python -I tools/check_package.py "artifacts/ClaudeCliProtocol.${GITHUB_REF_NAME#v}.nupkg"
+
+      # The Delphi library (phase 6) is zipped here and attached to the same release.
+
+      - name: Create the GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            artifacts/*.nupkg
+            artifacts/*.snupkg
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: false
+
+      # right before the push: the temporary key lasts one hour
+      - name: NuGet login (OIDC to a temporary API key)
+        id: login
+        if: env.NUGET_USER != ''
+        uses: NuGet/login@v1
+        with:
+          user: ${{ env.NUGET_USER }}
+
+      # the .snupkg next to each .nupkg goes up with it
+      - name: Publish to NuGet
+        if: env.NUGET_USER != ''
+        run: >-
+          dotnet nuget push artifacts/*.nupkg
+          --api-key ${{ steps.login.outputs.NUGET_API_KEY }}
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate

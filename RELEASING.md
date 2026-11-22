@@ -17,6 +17,11 @@ A lib Delphi entra no mesmo release como um zip, a partir da fase 6.
 Em 2026-11-22: nenhum release saiu, e nenhuma das configurações de "Uma vez só" foi feita. O
 repositório no GitHub está privado e vazio. Este arquivo descreve o processo; ele ainda não rodou.
 
+Os quatro workflows (`ci.yml`, `release.yml`, `pages.yml` e `fixtures.yml`) foram escritos e
+conferidos como YAML pelo teste de estrutura. **Nenhum rodou no GitHub ainda.** No `fixtures.yml`,
+os passos que instalam o Claude Code, gravam e abrem o pull request só rodam a partir da fase 2,
+quando o gravador chegar; até lá o workflow avisa que não há gravador e termina sem erro.
+
 ## Fazer um release
 
 ```bash
@@ -80,6 +85,10 @@ gh secret set ANTHROPIC_API_KEY -R carlosdealmeida/claude-cli-protocol
 
 Nenhuma chave entra no repositório, em arquivo nenhum. Sem o secret, o workflow avisa e termina
 sem erro.
+
+Para o workflow conseguir abrir o pull request, ligue em **Settings → Actions → General** a opção
+**Allow GitHub Actions to create and approve pull requests**. Um pull request aberto com o
+`GITHUB_TOKEN` não dispara o CI sozinho: feche e reabra o pull request antes de juntar.
 
 ## Tirar uma versão do ar
 
