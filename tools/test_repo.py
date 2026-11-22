@@ -225,5 +225,33 @@ class Workflows(unittest.TestCase):
             self.assertIn(command, ci)
 
 
+class ReviewFindings(unittest.TestCase):
+    """What the review of phase 0 found; each test failed before its fix."""
+
+    def test_a_job_that_configures_pages_may_read_pages(self):
+        # actions/configure-pages asks the API for the Pages site: with contents: read alone the step fails
+        doc = load_yaml(".github/workflows/pages.yml")
+        for name, job in doc["jobs"].items():
+            uses = [step.get("uses", "") for step in job.get("steps", [])]
+            if any(u.startswith("actions/configure-pages@") for u in uses):
+                granted = {**doc.get("permissions", {}), **job.get("permissions", {})}
+                self.assertIn("pages", granted, name)
+
+    def test_releasing_lists_the_private_reporting_setting(self):
+        # SECURITY and the issue templates send people to /security/advisories/new, which needs this setting
+        self.assertIn("Private vulnerability reporting", read("RELEASING.md"))
+
+    def test_the_chinese_readmes_say_they_are_ai_translations(self):
+        self.assertIn("本译文由 AI 生成", read("README.zh-cn.md"))
+        self.assertIn("本譯文由 AI 產生", read("README.zh-tw.md"))
+
+    def test_no_text_claims_what_phase_0_does_not_have(self):
+        self.assertNotIn("the recordings every library is tested against", read("libs/dotnet/README.md"))
+        self.assertNotIn("e um teste confere cada arquivo", read("fixtures/README.md"))
+        self.assertNotIn("checks that the five READMEs have the same sections and that every relative link",
+                         read("docs/i18n/glossary.md"))
+        self.assertNotIn("Published on GitHub Pages", read("site/astro.config.mjs"))
+
+
 if __name__ == "__main__":
     unittest.main()

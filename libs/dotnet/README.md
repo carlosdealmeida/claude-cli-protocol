@@ -21,7 +21,8 @@ The code arrives in phase 1, from the `Protocol/` folder of
 ## Documentation
 
 The repository has the documentation in five languages (Portuguese, English, Spanish, Simplified
-and Traditional Chinese), the recordings every library is tested against and the security policy:
+and Traditional Chinese) and the security policy. The recordings the library is tested against
+arrive with the code, in phase 1:
 
 <https://github.com/carlosdealmeida/claude-cli-protocol>
 

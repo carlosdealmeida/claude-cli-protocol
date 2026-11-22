@@ -38,8 +38,8 @@ jobs:
       - run: npm run check
         working-directory: site
 
-      - uses: actions/configure-pages@v6
-
+      # no actions/configure-pages here: astro.config.mjs fixes `site` and `base`, and that action
+      # needs a Pages permission this job does not ask for
       - uses: actions/upload-pages-artifact@v5
         with:
           path: site/dist

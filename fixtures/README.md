@@ -24,8 +24,9 @@ de uma linguagem só. O formato é definido na fase 1.
 ## Privacidade
 
 Uma gravação é uma sessão de verdade. Nenhuma entra aqui com dado pessoal de quem gravou: nome de
-usuário, pastas, e-mail ou credencial. O gravador troca tudo isso por valores de demonstração, e um
-teste confere cada arquivo.
+usuário, pastas, e-mail ou credencial. O gravador troca tudo isso por valores de demonstração, e o
+teste de privacidade confere cada arquivo. Nenhum dos dois está neste repositório ainda: o teste
+chega na fase 1, com as gravações, e o gravador na fase 2.
 
 ## Regravação
 

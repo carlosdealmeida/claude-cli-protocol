@@ -69,6 +69,7 @@ correspondence with what people see in the terminal and in the official document
 | `RELEASING.md`, `docs/specs/`, `docs/plans/`, `docs/ROADMAP.md` | pt-BR only |
 | `CHANGELOG.md`, `libs/dotnet/README.md`, this glossary | English only |
 
-The structure test (`tools/test_repo.py`) checks that the five READMEs have the same sections and
-that every relative link resolves. Wording quality is not something a test can check: that is what
-human review is for.
+The structure test (`tools/test_repo.py`) checks that the five READMEs have the same number of
+sections and that the relative links of the Markdown files at the root and in `docs/` resolve. It
+does not compare what the sections say, and it does not read the pages of the site. Wording quality
+is not something a test can check: that is what human review is for.

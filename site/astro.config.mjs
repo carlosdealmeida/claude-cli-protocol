@@ -1,8 +1,8 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
-// Published on GitHub Pages under /claude-cli-protocol. Portuguese is the default language and
-// lives at the root; the other four get a prefix.
+// Built for GitHub Pages, where it lives under /claude-cli-protocol. Portuguese is the default
+// language and lives at the root; the other four get a prefix.
 export default defineConfig({
   site: 'https://carlosdealmeida.github.io',
   base: '/claude-cli-protocol',

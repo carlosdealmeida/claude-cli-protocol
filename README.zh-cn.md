@@ -2,6 +2,8 @@
 
 [Português](README.md) · [English](README.en.md) · [Español](README.es.md) · **简体中文** · [繁體中文](README.zh-tw.md)
 
+> 本译文由 AI 生成，尚未经母语者审校。欢迎指正，术语表见 [docs/i18n/glossary.md](docs/i18n/glossary.md)。
+
 [![CI](https://github.com/carlosdealmeida/claude-cli-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/carlosdealmeida/claude-cli-protocol/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 

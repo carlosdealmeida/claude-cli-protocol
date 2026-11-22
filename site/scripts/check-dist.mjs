@@ -1,6 +1,6 @@
 // Checks the built site: the five locales, the language of each page and the links under the base path.
 // Usage (after `npm run build`): node scripts/check-dist.mjs
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -36,7 +36,17 @@ for (const locale of LOCALES) {
     for (const match of html.matchAll(/\shref="(\/[^"]*)"/g)) {
       const href = match[1];
       if (href.startsWith('//')) continue; // protocol-relative: another host
-      if (!href.startsWith(BASE) && href !== BASE.slice(0, -1)) problems.push(`dist/${rel}: link outside the base path: ${href}`);
+      if (!href.startsWith(BASE) && href !== BASE.slice(0, -1)) {
+        problems.push(`dist/${rel}: link outside the base path: ${href}`);
+        continue;
+      }
+      // and it must lead somewhere: a file of dist, or a folder with an index.html
+      const target = decodeURIComponent(href.slice(BASE.length).split(/[?#]/)[0]);
+      const found = [target, path.join(target, 'index.html')].some((candidate) => {
+        const full = path.join(DIST, candidate);
+        return existsSync(full) && statSync(full).isFile();
+      });
+      if (!found) problems.push(`dist/${rel}: dead link: ${href}`);
     }
   }
 }

@@ -68,11 +68,19 @@ O workflow não guarda chave do NuGet. Ele troca o token OIDC do GitHub por uma 
 O nome do pacote, `ClaudeCliProtocol`, estava livre no nuget.org em 2026-11-22. Ele só fica
 reservado com a primeira publicação.
 
+### Relato privado de vulnerabilidades
+
+O `SECURITY.md` e os modelos de issue mandam quem acha uma falha para
+`/security/advisories/new`. Esse formulário só existe com a opção ligada: em **Settings → Code
+security**, ligue **Private vulnerability reporting**. Faça isso ao tornar o repositório público;
+sem ela, quem quer relatar em privado não acha o caminho, e as issues em branco estão desligadas.
+
 ### GitHub Pages
 
 O site é publicado pelo workflow `.github/workflows/pages.yml`. Em **Settings → Pages**, escolha
 **Source: GitHub Actions**. O GitHub Pages de um repositório privado depende do plano da conta; num
-repositório público funciona em qualquer plano.
+repositório público funciona em qualquer plano. Enquanto o Pages não estiver ligado, o workflow
+"Deploy site" roda a cada push que toca `site/` e falha no passo de deploy.
 
 ### A chave das fixtures
 
