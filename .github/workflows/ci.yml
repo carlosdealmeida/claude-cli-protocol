@@ -88,3 +88,6 @@ jobs:
       - run: python -m pip install pyyaml
 
       - run: python -I tools/test_repo.py -v
+
+      # the pure parts of the sweep of anthropics/claude-code (docs/ROADMAP.md)
+      - run: python -I docs/test_sweep_issues.py -v
