@@ -130,5 +130,42 @@ class Policies(unittest.TestCase):
                 self.assertIn(term, text, name)
 
 
+READMES = ("README.md", "README.en.md", "README.es.md", "README.zh-cn.md", "README.zh-tw.md")
+
+
+class Readmes(unittest.TestCase):
+    NOTICE = {
+        "README.md": "Projeto da comunidade, sem vínculo com a Anthropic nem endosso dela.",
+        "README.en.md": "Community project, not affiliated with or endorsed by Anthropic.",
+        "README.es.md": "Proyecto de la comunidad, sin afiliación ni respaldo de Anthropic.",
+        "README.zh-cn.md": "社区项目，与 Anthropic 无隶属关系，也未获其认可。",
+        "README.zh-tw.md": "社群專案，與 Anthropic 無隸屬關係，亦未獲其認可。",
+    }
+
+    def test_each_readme_has_the_language_line(self):
+        # third line: the file's own language in bold, the other four as links to the right files
+        for name, label in zip(READMES, LANGUAGE_LABELS):
+            line = read(name).splitlines()[2]
+            self.assertIn(f"**{label}**", line, name)
+            for other, other_label in zip(READMES, LANGUAGE_LABELS):
+                if other != name:
+                    self.assertIn(f"[{other_label}]({other})", line, name)
+
+    def test_each_readme_carries_the_notice(self):
+        for name, sentence in self.NOTICE.items():
+            self.assertIn(sentence, read(name), name)
+
+    def test_all_readmes_have_the_same_sections(self):
+        counts = {name: sum(1 for line in read(name).splitlines() if line.startswith("## ")) for name in READMES}
+        self.assertEqual(len(set(counts.values())), 1, counts)
+
+    def test_no_readme_claims_a_published_package(self):
+        # nothing is published in phase 0: no install instruction and no NuGet badge
+        for name in READMES:
+            text = read(name)
+            self.assertNotIn("dotnet add package", text, name)
+            self.assertNotIn("img.shields.io/nuget", text, name)
+
+
 if __name__ == "__main__":
     unittest.main()
