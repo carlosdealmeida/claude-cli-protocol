@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net6.0</TargetFrameworks>
+    <RootNamespace>ClaudeCliProtocol</RootNamespace>
+    <AssemblyName>ClaudeCliProtocol</AssemblyName>
+    <!-- the XML documentation goes in the package, beside the dll, for IntelliSense; not every member has a
+         summary yet, so a missing one is no error under TreatWarningsAsErrors -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <!-- the NuGet package -->
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>ClaudeCliProtocol</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>carlosdealmeida</Authors>
+    <Description>Reads and writes the stream-json protocol of claude -p (Claude Code): typed events, commands, a session and swappable transports. Community project, not affiliated with or endorsed by Anthropic.</Description>
+    <PackageTags>claude claude-code stream-json protocol cli</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Copyright>Copyright (c) 2026 carlosdealmeida</Copyright>
+    <RepositoryUrl>https://github.com/carlosdealmeida/claude-cli-protocol</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/carlosdealmeida/claude-cli-protocol</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ClaudeCliProtocol.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+
+  <!-- IAsyncDisposable and IAsyncEnumerable, which net6.0 already has -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>
