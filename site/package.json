@@ -1,0 +1,19 @@
+{
+  "name": "claude-cli-protocol-site",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.23.4"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "node scripts/check-dist.mjs"
+  },
+  "devDependencies": {
+    "@astrojs/starlight": "^0.43.1",
+    "astro": "^7.4.13",
+    "typescript": "^5.9.3"
+  }
+}

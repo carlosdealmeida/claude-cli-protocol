@@ -1,0 +1,31 @@
+---
+title: claude-cli-protocol
+description: claude -p 的 stream-json 协议：有规范、有录制、有实现。
+template: splash
+hero:
+  tagline: claude -p 的 stream-json 协议：有规范、有录制、有实现。
+  actions:
+    - text: 概览
+      link: /claude-cli-protocol/zh-cn/overview/
+      icon: right-arrow
+    - text: GitHub
+      link: https://github.com/carlosdealmeida/claude-cli-protocol
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <Card title="规范" icon="document">
+    `claude -p` 逐行写出和读入的内容：事件、命令、控制和传输。将在第 5 阶段到来。
+  </Card>
+  <Card title="Fixtures" icon="seti:json">
+    真实会话的录制，以及每份录制的预期结果。每个库都要通过同一套测试。将在第 1 阶段到来。
+  </Card>
+  <Card title="库" icon="puzzle">
+    先是 .NET（`netstandard2.0` 和 `net6.0`），在第 1 阶段。然后是 Delphi，最低支持 10.1 Berlin，在第 6 阶段。
+  </Card>
+</CardGrid>
+
+社区项目，与 Anthropic 无隶属关系，也未获其认可。

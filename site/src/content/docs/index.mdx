@@ -1,0 +1,34 @@
+---
+title: claude-cli-protocol
+description: O protocolo stream-json do claude -p, especificado, gravado e implementado.
+template: splash
+hero:
+  tagline: O protocolo stream-json do claude -p, especificado, gravado e implementado.
+  actions:
+    - text: Visão geral
+      link: /claude-cli-protocol/overview/
+      icon: right-arrow
+    - text: GitHub
+      link: https://github.com/carlosdealmeida/claude-cli-protocol
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <Card title="Especificação" icon="document">
+    O que o `claude -p` escreve e lê, linha por linha: eventos, comandos, controle e transporte.
+    Chega na fase 5.
+  </Card>
+  <Card title="Fixtures" icon="seti:json">
+    Gravações de sessões de verdade e o resultado esperado de cada uma. Toda lib passa pela mesma
+    suíte. Chegam na fase 1.
+  </Card>
+  <Card title="Libs" icon="puzzle">
+    .NET primeiro (`netstandard2.0` e `net6.0`), na fase 1. Delphi depois, com piso no 10.1 Berlin,
+    na fase 6.
+  </Card>
+</CardGrid>
+
+Projeto da comunidade, sem vínculo com a Anthropic nem endosso dela.
