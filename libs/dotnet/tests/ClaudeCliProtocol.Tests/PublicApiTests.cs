@@ -41,7 +41,16 @@ namespace ClaudeCliProtocol.Tests
                                          "TextContentBlock", "PermissionRequested", "TurnCompleted" })
                 Assert.Contains("ClaudeCliProtocol." + name, Names);
             Assert.DoesNotContain("ClaudeCliProtocol.TextBlock", Names); // the name the CVC avoided, kept avoided
-            Assert.Equal(36, typeof(ClaudeEvent).Assembly.GetExportedTypes().Count(t => t.IsSubclassOf(typeof(ClaudeEvent))));
+            // the 36 that came from Claude Visual Chat and ControlReplied, which the session adds
+            Assert.Equal(37, typeof(ClaudeEvent).Assembly.GetExportedTypes().Count(t => t.IsSubclassOf(typeof(ClaudeEvent))));
+        }
+
+        [Fact]
+        public void The_transport_and_the_session_are_public()
+        {
+            foreach (var name in new[] { "IClaudeTransport", "TransportState", "ReplayTransport", "PermissionLedger",
+                                         "ClaudeSession", "ControlReplied" })
+                Assert.Contains("ClaudeCliProtocol." + name, Names);
         }
 
         [Fact]
