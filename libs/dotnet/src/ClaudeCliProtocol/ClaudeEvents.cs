@@ -1,0 +1,321 @@
+using System;
+using System.Collections.Generic;
+using System.Text.Json;
+
+namespace ClaudeCliProtocol
+{
+    /// <summary>Which stream of a content block a delta extends.</summary>
+    public enum DeltaKind
+    {
+        Text,
+        Thinking,
+        InputJson,
+    }
+
+    /// <summary>A typed event read from one line of stream-json output or of a session file.</summary>
+    public abstract record ClaudeEvent;
+
+    public sealed record SessionStarted(
+        string? SessionId, string? Model, string? WorkingDirectory, string? PermissionMode, string? ClaudeVersion)
+        : ClaudeEvent
+    {
+        /// <summary>The commands the terminal handles itself (<c>terminal_slash_commands</c>); empty when not told.</summary>
+        public IReadOnlyList<string> TerminalCommands { get; init; } = Array.Empty<string>();
+
+        /// <summary>The fast mode (<c>fast_mode_state</c>): <c>on</c>, <c>cooldown</c> or <c>off</c>; null when the line has none.</summary>
+        public string? FastModeState { get; init; }
+
+        /// <summary>
+        /// Whether the word <c>ultrathink</c> in a prompt raises the turn's effort, for the model of this line (<c>ultrathink_available</c>);
+        /// null when the line does not say.
+        /// </summary>
+        public bool? UltrathinkAvailable { get; init; }
+    }
+
+    /// <summary>
+    /// The effort of the turn changed by itself (<c>system/per_turn_effort_changed</c>): a prompt with <c>ultrathink</c> raised it. Live
+    /// only: a session file never raises it.
+    /// </summary>
+    public sealed record PerTurnEffortChanged() : ClaudeEvent;
+
+    public sealed record StatusChanged(string? Status, string? PermissionMode) : ClaudeEvent;
+
+    /// <summary>
+    /// A hook of the claude began (<c>system/hook_started</c>): <paramref name="HookId"/> is its id, <paramref name="HookEvent"/> the
+    /// event it answers (<c>SessionStart</c>, <c>Setup</c>, <c>PreToolUse</c>...).
+    /// </summary>
+    public sealed record HookStarted(string HookId, string HookEvent) : ClaudeEvent;
+
+    /// <summary>A hook of the claude answered (<c>system/hook_response</c>); <paramref name="HookId"/> is the one a <see cref="HookStarted"/> gave.</summary>
+    public sealed record HookFinished(string HookId) : ClaudeEvent;
+
+    /// <summary>
+    /// What became of a message written to the claude's stdin with a <c>uuid</c> (<c>command_lifecycle</c>, 2.1.310):
+    /// <paramref name="CommandUuid"/> is that uuid; <paramref name="State"/> is <c>queued</c>, <c>started</c>, <c>completed</c>,
+    /// <c>cancelled</c>, <c>discarded</c> or <c>refused</c>; <paramref name="RanAhead"/> is true for a command the claude ran at
+    /// once, while it was working (<c>ran_ahead</c>), false when not told.
+    /// </summary>
+    public sealed record CommandLifecycle(string CommandUuid, string State, bool RanAhead) : ClaudeEvent;
+
+    /// <summary>A complete assistant block (one block per line).</summary>
+    public sealed record AssistantBlock(string MessageId, string? ParentToolUseId, ContentBlock Block) : ClaudeEvent
+    {
+        /// <summary>When the line was written (its <c>timestamp</c>); null when the line has none.</summary>
+        public DateTimeOffset? Timestamp { get; init; }
+
+        /// <summary>How long a thought took (the session file's <c>thinkingDurationMs</c>); null when not told.</summary>
+        public long? ThinkingDurationMs { get; init; }
+
+        /// <summary>The line's <c>uuid</c>; null when the line has none.</summary>
+        public string? Uuid { get; init; }
+
+        /// <summary>
+        /// The <c>uuid</c>s of the lines this one replaces (<c>supersedes</c>): a reply the claude discarded and wrote again. Empty when the
+        /// line says nothing or says it in another shape; the same list is on every block of the line.
+        /// </summary>
+        public IReadOnlyList<string> Supersedes { get; init; } = Array.Empty<string>();
+
+        /// <summary>The line is the claude's own (the model is <c>&lt;synthetic&gt;</c>), not a reply of the model.</summary>
+        public bool IsSynthetic { get; init; }
+    }
+
+    /// <summary>
+    /// A streamed reply began (<c>message_start</c>): <paramref name="MessageId"/> is the id of the message; <paramref name="ParentToolUseId"/>
+    /// is the tool call of the sub-agent that writes it, null for the main conversation. Not sent when the message has no id.
+    /// </summary>
+    public sealed record MessageStarted(string MessageId, string? ParentToolUseId) : ClaudeEvent;
+
+    public sealed record UserBlock(
+        string? ParentToolUseId, ContentBlock Block, JsonElement? ToolUseResult, bool IsMeta, bool IsCompactSummary)
+        : ClaudeEvent
+    {
+        /// <summary>When the line was written (its <c>timestamp</c>); null when the line has none.</summary>
+        public DateTimeOffset? Timestamp { get; init; }
+
+        /// <summary>The images that came with the text; empty by default.</summary>
+        public IReadOnlyList<ImageBlock> Images { get; init; } = Array.Empty<ImageBlock>();
+
+        /// <summary>The line is the claude's own (<c>isSynthetic</c>), not something the user wrote: after a compaction, the summary comes so.</summary>
+        public bool IsSynthetic { get; init; }
+
+        /// <summary>
+        /// Where the line says it came from (<c>origin</c>): another session, a channel, a task. A session file writes it on the line of a
+        /// task's notice (<c>task-notification</c>), and the claude writes it when it replays a message. Null when the line says nothing.
+        /// </summary>
+        public MessageOrigin? Origin { get; init; }
+
+        /// <summary>The line's <c>uuid</c> (for a queued command, its <c>source_uuid</c>); null when the line has none.</summary>
+        public string? Uuid { get; init; }
+
+        /// <summary>The message was delivered from the queue in the middle of a turn: a session file keeps it as an <c>attachment</c> line, not a <c>user</c> line.</summary>
+        public bool IsQueuedCommand { get; init; }
+
+        /// <summary>The terminal, browser and selection blocks that came before the text of this message; empty by default.</summary>
+        internal IReadOnlyList<ContextBlock> Context { get; init; } = Array.Empty<ContextBlock>();
+    }
+
+    /// <summary>
+    /// The <c>origin</c> of a user line: <paramref name="Kind"/> is <c>human</c>, <c>peer</c>, <c>channel</c>, <c>task-notification</c>,
+    /// <c>coordinator</c>, <c>plugin</c>…
+    /// </summary>
+    public sealed record MessageOrigin(string Kind)
+    {
+        /// <summary>The sender's name (<c>name</c>), for a message from another session; null when not told.</summary>
+        public string? Name { get; init; }
+
+        /// <summary>The task of the sender (<c>senderTaskId</c>), when the sender is an agent of this same session; null otherwise.</summary>
+        public string? SenderTaskId { get; init; }
+
+        /// <summary>A narrower kind (<c>subkind</c>); null when not told.</summary>
+        public string? Subkind { get; init; }
+    }
+
+    /// <summary>A streamed block opened. A <c>tool_use</c> starts with an empty <c>{}</c> input.</summary>
+    public sealed record BlockStarted(string MessageId, int Index, string? ParentToolUseId, ContentBlock Block) : ClaudeEvent;
+
+    public sealed record BlockDelta(string MessageId, int Index, string? ParentToolUseId, DeltaKind Kind, string Text) : ClaudeEvent
+    {
+        /// <summary>For a thought: the tokens it has used so far, as the delta tells (<c>estimated_tokens</c>); null when not told.</summary>
+        public long? EstimatedTokens { get; init; }
+    }
+
+    /// <summary>
+    /// How many tokens the claude has thought so far in the block that is arriving (<c>system/thinking_tokens</c>): the
+    /// absolute count, which only grows within a block.
+    /// </summary>
+    public sealed record ThinkingTokens(long EstimatedTokens) : ClaudeEvent;
+
+    public sealed record BlockStopped(string MessageId, int Index, string? ParentToolUseId) : ClaudeEvent;
+
+    public sealed record PermissionRequested(
+        string RequestId, string ToolName, string? DisplayName, string? Description, string? ToolUseId,
+        JsonElement Input, JsonElement? Suggestions)
+        : ClaudeEvent
+    {
+        /// <summary>The subagent that asks (<c>agent_id</c>, its <c>task_id</c>); null when the main conversation asks.</summary>
+        public string? AgentId { get; init; }
+
+        /// <summary>The claude asks to put the keyboard on "No" (<c>default_to_no</c>); false when not told.</summary>
+        public bool DefaultToNo { get; init; }
+
+        /// <summary>The claude offers no rule to remember (<c>suppress_always_allow_rule</c>): no "allow always"; false when not told.</summary>
+        public bool SuppressAlwaysAllowRule { get; init; }
+
+        /// <summary>Why the claude asks (<c>decision_reason</c>), as it came: a hook's text, a safety check's sentence…; null when not told.</summary>
+        public string? DecisionReason { get; init; }
+
+        /// <summary>
+        /// What decided to ask (<c>decision_reason_type</c>): <c>hook</c>, <c>safetyCheck</c>, <c>subcommandResults</c>,
+        /// <c>other</c>…; null when not told.
+        /// </summary>
+        public string? DecisionReasonType { get; init; }
+
+        /// <summary>A code for the reason (<c>decision_reason_code</c>), such as <c>classifier_transcript_too_long</c>; null when not told.</summary>
+        public string? DecisionReasonCode { get; init; }
+
+        /// <summary>Where the MCP server of the tool comes from (<c>mcp_server.source</c>), <c>claudeai</c> for a claude.ai connector; null when not told.</summary>
+        public string? McpServerSource { get; init; }
+    }
+
+    public sealed record PermissionCancelled(string RequestId) : ClaudeEvent;
+
+    public sealed record ControlAcknowledged(string RequestId, bool IsError, JsonElement? Response) : ClaudeEvent
+    {
+        /// <summary>The text of an error reply (<c>error</c>); null for a success, or when the reply has none.</summary>
+        public string? Error { get; init; }
+    }
+
+    /// <summary><paramref name="InputTokens"/> adds the cache creation and cache read tokens.</summary>
+    public sealed record TurnCompleted(
+        string Subtype, bool IsError, long? DurationMs, double? CostUsd, long? InputTokens, long? OutputTokens)
+        : ClaudeEvent
+    {
+        /// <summary>The time the turn spent on the API (<c>duration_api_ms</c>), which the claude counts from the start of its process; null when the line has none.</summary>
+        public long? ApiDurationMs { get; init; }
+
+        /// <summary>For a turn that failed: the text the claude gives (<c>result</c>, else the first of <c>errors</c>); null when it gives none.</summary>
+        public string? ErrorMessage { get; init; }
+
+        /// <summary>The fast mode (<c>fast_mode_state</c>): <c>on</c>, <c>cooldown</c> or <c>off</c>; null when the line has none.</summary>
+        public string? FastModeState { get; init; }
+    }
+
+    /// <summary>Marker for <c>compact_boundary</c> and <c>api_retry</c>.</summary>
+    public sealed record SystemNotice(string Subtype) : ClaudeEvent
+    {
+        /// <summary>For <c>compact_boundary</c>: what started the compaction, <c>manual</c> or <c>auto</c> (<c>compact_metadata.trigger</c>); null when not told.</summary>
+        public string? Trigger { get; init; }
+
+        /// <summary>For <c>compact_boundary</c>: the tokens the conversation held before (<c>pre_tokens</c>); null when not told.</summary>
+        public long? PreTokens { get; init; }
+
+        /// <summary>For <c>compact_boundary</c>: the tokens it holds after (<c>post_tokens</c>); null when not told.</summary>
+        public long? PostTokens { get; init; }
+
+        /// <summary>For <c>api_retry</c>: the error that made the claude try again (<c>error</c>); null when not told.</summary>
+        public string? ErrorMessage { get; init; }
+    }
+
+    /// <summary>
+    /// A line the claude says about its own work (<c>system/informational</c>). <paramref name="Level"/> is <c>info</c>, <c>warning</c> or
+    /// <c>error</c> (<c>info</c> when the line does not say); a hook that blocked the prompt sends a <c>warning</c> whose text is
+    /// "UserPromptSubmit operation blocked by hook:", the reason and "Original prompt: …".
+    /// </summary>
+    public sealed record Informational(string Level, string Text) : ClaudeEvent;
+
+    /// <summary>The slash commands the session offers (from <c>initialize</c> or <c>commands_changed</c>).</summary>
+    public sealed record CommandsAvailable(IReadOnlyList<SlashCommand> Commands) : ClaudeEvent;
+
+    public sealed record ModelsAvailable(IReadOnlyList<ModelOption> Models) : ClaudeEvent;
+
+    /// <summary>The settings in force (from <c>get_settings</c>). <paramref name="HasEffort"/> is false when <c>effort</c> is absent.</summary>
+    public sealed record SettingsApplied(string? Model, string? Effort, bool HasEffort) : ClaudeEvent
+    {
+        /// <summary>Whether the word <c>ultrathink</c> in a prompt raises the turn's effort (<c>ultrathinkAvailable</c>); null when the reply does not say.</summary>
+        public bool? UltrathinkAvailable { get; init; }
+    }
+
+    /// <summary>A reply used the prompt cache. <paramref name="Ttl"/> is null when the line does not say how long it lives.</summary>
+    public sealed record PromptCacheUsed(TimeSpan? Ttl, DateTimeOffset? At) : ClaudeEvent;
+
+    public sealed record ContextUsageReported(ContextUsage Usage) : ClaudeEvent;
+
+    public sealed record UsageLimitsReported(UsageLimits Limits) : ClaudeEvent;
+
+    /// <summary>The login, from the <c>account</c> of the <c>initialize</c> reply.</summary>
+    public sealed record AccountReported(AccountInfo Account) : ClaudeEvent;
+
+    /// <summary>
+    /// What the <c>initialize</c> reply says about an auth token and an API key set together: the pair of sources (its
+    /// <c>auth_conflict</c>), or null when the reply has none. Raised for each reply that carries <c>commands</c>.
+    /// </summary>
+    public sealed record AuthConflictReported(AuthConflict? Conflict) : ClaudeEvent;
+
+    /// <summary>Remote Control moved (<c>bridge_state</c>) or started (<c>session_url</c>).</summary>
+    public sealed record RemoteControlChanged(string? State, string? Url, string? Detail) : ClaudeEvent;
+
+    /// <summary>
+    /// The claude's safeguards switched the model (<c>system/model_refusal_fallback</c>): the reply comes from
+    /// <paramref name="FallbackModel"/> instead of <paramref name="OriginalModel"/>. Live only: a session file never raises it.
+    /// </summary>
+    public sealed record ModelRefusalFallback(string? OriginalModel, string? FallbackModel, string? Category) : ClaudeEvent;
+
+    /// <summary>
+    /// What became of a message from another session that the claude held back for the user to review
+    /// (<c>system/peer_message_hold</c>). <paramref name="State"/> is <c>held</c>, <c>released</c> or <c>dropped</c>;
+    /// <paramref name="From"/> is the sender's address, empty when the line has none. Live only: a session file never has it.
+    /// </summary>
+    public sealed record PeerMessageHold(string State, string From) : ClaudeEvent
+    {
+        /// <summary>The held message's uuid (<c>message_uuid</c>), which ties a release or a drop to its hold; null when the line has none.</summary>
+        public string? MessageUuid { get; init; }
+
+        /// <summary>The name the sender calls itself (<c>from_name</c>).</summary>
+        public string? FromName { get; init; }
+
+        /// <summary>Why it was held (<c>cause</c>, on <c>held</c>): <c>explicit-setting</c>, <c>managed-setting</c>, <c>repo-setting</c>, <c>invalid-setting</c>, <c>bypass-default</c>, <c>mode-unknown</c>, <c>mode-mismatch</c> or <c>no-mode-asserted</c>.</summary>
+        public string? Cause { get; init; }
+
+        /// <summary>Why it was dropped (<c>outcome</c>, on <c>dropped</c>): <c>expired</c>, <c>refused</c>, <c>dropped</c>, <c>discarded</c> or <c>denied</c>.</summary>
+        public string? Outcome { get; init; }
+    }
+
+    /// <summary>A slash command the user ran; <paramref name="Name"/> has no leading slash.</summary>
+    public sealed record CommandEcho(string Name, string Arguments) : ClaudeEvent;
+
+    /// <summary>What a local slash command printed (the inside of <c>local-command-stdout</c>).</summary>
+    public sealed record CommandOutput(string Text) : ClaudeEvent;
+
+    /// <summary>
+    /// A task started (<c>system/task_started</c>). <paramref name="TaskType"/> is <c>local_agent</c> for a subagent
+    /// (<c>local_bash</c> for a command); empty when the line does not say.
+    /// </summary>
+    public sealed record AgentTaskStarted(
+        string TaskId, string ToolUseId, string Description, string? AgentType, bool IsBackground, int Depth, string TaskType)
+        : ClaudeEvent
+    {
+        /// <summary>What the agent was asked to do (the line's <c>prompt</c>); null when the line does not say.</summary>
+        public string? Prompt { get; init; }
+    }
+
+    /// <summary>A task used a tool (<c>system/task_progress</c>); <paramref name="Activity"/> says what it is doing.</summary>
+    public sealed record AgentTaskProgress(
+        string TaskId, string ToolUseId, string? Activity, long? Tokens, int? ToolUses, long? DurationMs)
+        : ClaudeEvent;
+
+    /// <summary>A task changed (<c>system/task_updated</c>); <paramref name="Status"/> is its patch's status, if any.</summary>
+    public sealed record AgentTaskUpdated(string TaskId, string? Status) : ClaudeEvent
+    {
+        /// <summary>Whether the task went to the background (its patch's <c>is_backgrounded</c>); null when the patch does not say.</summary>
+        public bool? IsBackgrounded { get; init; }
+    }
+
+    /// <summary>
+    /// A task ended (<c>system/task_notification</c>, or the <c>&lt;task-notification&gt;</c> text of a session file).
+    /// <paramref name="Status"/> is <c>completed</c>, <c>failed</c>, <c>killed</c>…; <paramref name="Summary"/> is
+    /// what the agent answered.
+    /// </summary>
+    public sealed record AgentTaskFinished(
+        string TaskId, string ToolUseId, string Status, string? Summary, long? Tokens, int? ToolUses, long? DurationMs)
+        : ClaudeEvent;
+}

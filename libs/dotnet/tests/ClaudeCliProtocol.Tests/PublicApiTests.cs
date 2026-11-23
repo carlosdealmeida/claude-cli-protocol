@@ -35,6 +35,16 @@ namespace ClaudeCliProtocol.Tests
         }
 
         [Fact]
+        public void The_readers_and_the_events_are_public()
+        {
+            foreach (var name in new[] { "StreamJsonParser", "TranscriptParser", "ClaudeEvent", "ContentBlock",
+                                         "TextContentBlock", "PermissionRequested", "TurnCompleted" })
+                Assert.Contains("ClaudeCliProtocol." + name, Names);
+            Assert.DoesNotContain("ClaudeCliProtocol.TextBlock", Names); // the name the CVC avoided, kept avoided
+            Assert.Equal(36, typeof(ClaudeEvent).Assembly.GetExportedTypes().Count(t => t.IsSubclassOf(typeof(ClaudeEvent))));
+        }
+
+        [Fact]
         public void Every_public_type_is_in_the_one_namespace()
         {
             Assert.All(typeof(AnsiText).Assembly.GetExportedTypes(), t => Assert.Equal("ClaudeCliProtocol", t.Namespace));
