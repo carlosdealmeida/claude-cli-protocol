@@ -49,10 +49,11 @@ Correção pequena (um erro de digitação, um link) não precisa de spec nem de
 
 ## Fixtures
 
-As gravações em `fixtures/` são sessões de verdade do `claude -p`. Nenhuma entra com dado pessoal
-de quem gravou: nome de usuário, pastas, e-mail ou credencial. O gravador troca tudo isso por
-valores de demonstração, e um teste confere cada arquivo. O gravador e o teste chegam com a lib,
-nas fases 1 e 2.
+As gravações em `fixtures/` são sessões de verdade do `claude -p`. Nenhuma entra com dado pessoal de
+quem gravou: nome de usuário, pastas, e-mail ou credencial. O gravador troca tudo isso por valores
+de demonstração, e o teste `FixturePrivacyTests` confere cada arquivo. O gravador chega na fase 2.
+Cada gravação tem ao lado o seu resultado esperado; o formato está em
+[fixtures/README.md](fixtures/README.md).
 
 ## Traduções
 

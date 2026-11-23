@@ -62,8 +62,10 @@ commands into lines.
 ## Security
 
 The answer to a permission request always carries the `input` and the `permission_suggestions` the
-process side received from `claude` itself. The caller only chooses the request, the decision and
-the message, and has no way to change what the tool will run.
+process side received from `claude` itself. Whoever sends the command only chooses the request, the
+decision and the message: the answer command has no field for the `input`. Whoever writes to the
+stdin of `claude` builds the answer from the request it read itself, and each request is answered
+once.
 
 To report a flaw, see the [security policy](SECURITY.en.md).
 

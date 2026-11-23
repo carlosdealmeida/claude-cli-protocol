@@ -86,21 +86,65 @@ namespace ClaudeCliProtocol.Tests
         }
 
         [Fact]
-        public async Task Two_messages_need_two_results()
+        public async Task A_message_folded_into_the_running_turn_does_not_leave_the_session_busy()
+        {
+            // the "queued" recording: two messages were sent, the second while the first turn ran a command; the
+            // claude took it into that same turn, so the stream has one init and one result
+            var transport = new ScriptedTransport();
+            await using var session = new ClaudeSession(transport);
+            await session.SendAsync(new SendUserMessage("first"));
+            await session.SendAsync(new SendUserMessage("second"));
+            foreach (var line in FixtureFiles.StreamLines("queued")) transport.Enqueue(line);
+
+            var busyAtTheLastLine = true;
+            var results = 0;
+            var reading = Task.Run(async () =>
+            {
+                await foreach (var e in session.ReadEventsAsync())
+                {
+                    busyAtTheLastLine = session.IsBusy;
+                    if (e is TurnCompleted) results++;
+                }
+            });
+            transport.WaitForReader(); // every line was handled; the transport is still open
+            var busyWithTheTransportOpen = session.IsBusy;
+            transport.Close();
+            await reading;
+
+            Assert.Equal(1, results);
+            Assert.False(busyAtTheLastLine);
+            Assert.False(busyWithTheTransportOpen);
+        }
+
+        [Fact]
+        public async Task A_queued_message_that_gets_its_own_turn_makes_the_session_busy_again()
         {
             var transport = new ScriptedTransport();
             await using var session = new ClaudeSession(transport);
             await session.SendAsync(new SendUserMessage("one"));
             await session.SendAsync(new SendUserMessage("two"));
-            transport.Enqueue(Result);
+            transport.Enqueue(Result); // the end of the first turn
+            transport.Enqueue(Init);   // the claude starts on the message that waited
             transport.Enqueue(Result);
             transport.Close();
 
-            var busyAfterEachResult = new List<bool>();
-            await foreach (var e in session.ReadEventsAsync())
-                if (e is TurnCompleted) busyAfterEachResult.Add(session.IsBusy);
+            var busy = new List<bool>();
+            await foreach (var _ in session.ReadEventsAsync()) busy.Add(session.IsBusy);
 
-            Assert.Equal(new[] { true, false }, busyAfterEachResult);
+            Assert.Equal(new[] { false, true, false }, busy);
+        }
+
+        [Fact]
+        public async Task A_message_that_cannot_be_sent_while_a_turn_runs_leaves_the_session_busy()
+        {
+            var transport = new ScriptedTransport();
+            await using var session = new ClaudeSession(transport);
+            await session.SendAsync(new SendUserMessage("one"));
+            transport.FailNextSend = true;
+
+            await Assert.ThrowsAsync<IOException>(() => session.SendAsync(new SendUserMessage("two")));
+
+            Assert.True(session.IsBusy); // the first turn is still running
         }
 
         [Fact]
@@ -399,25 +443,25 @@ namespace ClaudeCliProtocol.Tests
         }
 
         [Fact]
-        public async Task An_interrupt_reply_counts_what_is_still_queued()
+        public async Task An_interrupt_ends_with_the_result_of_the_interrupted_turn()
         {
             var transport = new ScriptedTransport();
             await using var session = new ClaudeSession(transport);
             await session.SendAsync(new SendUserMessage("one"));
             await session.SendAsync(new SendUserMessage("two"));
-            await session.SendAsync(new SendUserMessage("three"));
             await session.SendAsync(new Interrupt());
-            // the claude dropped one queued message and kept "a": the interrupted turn and "a" still bring a result
-            transport.Enqueue(Success(SentId(transport), "{\"still_queued\":[\"a\"]}"));
-            transport.Enqueue(Result);
+            // the reply tells what is still queued; the stream tells when each turn starts and ends
+            transport.Enqueue(Success(SentId(transport), "{\"still_queued\":[\"two\"]}"));
+            transport.Enqueue(Result); // the interrupted turn
+            transport.Enqueue(Init);   // the message still queued starts its own
             transport.Enqueue(Result);
             transport.Close();
 
             var busy = new List<bool>();
             await foreach (var e in session.ReadEventsAsync())
-                if (e is ControlReplied || e is TurnCompleted) busy.Add(session.IsBusy);
+                if (e is ControlReplied || e is TurnCompleted || e is SessionStarted) busy.Add(session.IsBusy);
 
-            Assert.Equal(new[] { true, true, false }, busy);
+            Assert.Equal(new[] { true, false, true, false }, busy);
         }
 
         // ---------------------------------------------------------------- robustness

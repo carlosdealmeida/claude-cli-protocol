@@ -109,10 +109,13 @@ namespace ClaudeCliProtocol
         }
 
         /// <summary>
-        /// The answer to a <c>can_use_tool</c> request. The input and the suggestions are those of
-        /// <paramref name="request"/>, the request the process side received from the claude, never the caller's:
-        /// <c>allow</c> sends the input back unchanged, "allow always" also sends the request's suggestions as
-        /// <c>updatedPermissions</c>, and <c>deny</c> sends the message.
+        /// The answer to a <c>can_use_tool</c> request: <c>allow</c> sends the input back unchanged, "allow always"
+        /// also sends the request's suggestions as <c>updatedPermissions</c>, and <c>deny</c> sends the message.
+        /// The input and the suggestions are those of <paramref name="request"/>, and this method trusts the request
+        /// it is given. It is for the side that owns the claude's stdin, and that side passes the request it read
+        /// itself from the claude's stdout, taken from a <see cref="PermissionLedger"/> (which hands each request
+        /// out once). It never passes a request, an input or suggestions that came with the command or from whoever
+        /// sent it: that is the whole rule, and nothing here can enforce it for a caller that does otherwise.
         /// </summary>
         public static string Write(AnswerPermission answer, PermissionRequested request)
         {

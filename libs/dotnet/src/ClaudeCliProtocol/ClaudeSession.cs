@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,7 +25,7 @@ namespace ClaudeCliProtocol
         private readonly StreamJsonParser _parser = new StreamJsonParser();
         private readonly PermissionLedger _ledger = new PermissionLedger();
         private readonly Dictionary<string, ControlCommand> _controls = new Dictionary<string, ControlCommand>();
-        private int _turns;
+        private bool _busy;
         private string? _sessionId;
         private string? _permissionMode;
         private string? _model;
@@ -70,15 +69,18 @@ namespace ClaudeCliProtocol
         }
 
         /// <summary>
-        /// A turn is open: each message sent opens one and each <c>result</c> line closes one. A <c>system/init</c>
-        /// that arrives with no turn open opens one too (a message that came from somewhere else, as through Remote
-        /// Control).
+        /// The claude is working, or about to: true from a message sent, or from a <c>system/init</c> line (the start
+        /// of a turn, also of one this side did not ask for, as a message through Remote Control), until the next
+        /// <c>result</c> line. The stream decides, not a count of the messages sent: the claude may take a message
+        /// sent while it works into the running turn, and then one <c>result</c> ends both. A message that waited
+        /// for its own turn makes the session busy again at that turn's <c>system/init</c>, so between the two the
+        /// session is idle for a moment.
         /// </summary>
         public bool IsBusy
         {
             get
             {
-                lock (_gate) return _turns > 0;
+                lock (_gate) return _busy;
             }
         }
 
@@ -128,10 +130,12 @@ namespace ClaudeCliProtocol
         }
 
         /// <summary>
-        /// Sends a command. A message opens a turn. A control command gets a new request id, and its reply comes back
-        /// as a <see cref="ControlReplied"/>. An answer to a permission request goes only when the request is pending,
-        /// and takes it out: false, and nothing sent, for a request already answered, cancelled, resolved or unknown.
-        /// What the transport throws is thrown here.
+        /// Sends a command. A message makes the session busy. A control command gets a new request id, and its reply
+        /// comes back as a <see cref="ControlReplied"/>. An answer to a permission request goes only when the request
+        /// is pending, and takes it out: false, and nothing sent, for a request already answered, cancelled, resolved
+        /// or unknown. True means the command was handed to the transport, not that the claude took it. What the
+        /// transport throws is thrown here; an answer the transport failed to deliver stays taken out, because nobody
+        /// knows whether the claude got it, and after that only an <see cref="Interrupt"/> frees the claude.
         /// </summary>
         public async Task<bool> SendAsync(ClaudeCommand command, CancellationToken ct = default)
         {
@@ -165,22 +169,26 @@ namespace ClaudeCliProtocol
 
                 case SendUserMessage message:
                     {
-                        // opened before it is sent: a quick result must find its turn
-                        bool changed;
-                        lock (_gate) changed = _turns++ == 0;
-                        if (changed) StateChanged?.Invoke(this, EventArgs.Empty);
+                        // busy before it is sent: a quick result must find the session busy
+                        bool wasIdle;
+                        lock (_gate)
+                        {
+                            wasIdle = !_busy;
+                            _busy = true;
+                        }
+                        if (wasIdle) StateChanged?.Invoke(this, EventArgs.Empty);
                         try
                         {
                             await _transport.SendAsync(message, ct).ConfigureAwait(false);
                         }
                         catch
                         {
-                            lock (_gate)
+                            // only what this send changed is undone: a turn that was already running goes on
+                            if (wasIdle)
                             {
-                                _turns = Math.Max(0, _turns - 1);
-                                changed = _turns == 0;
+                                lock (_gate) _busy = false;
+                                StateChanged?.Invoke(this, EventArgs.Empty);
                             }
-                            if (changed) StateChanged?.Invoke(this, EventArgs.Empty);
                             throw;
                         }
                         return true;
@@ -206,7 +214,7 @@ namespace ClaudeCliProtocol
             var changed = _ledger.Observe(e);
             lock (_gate)
             {
-                var busy = _turns > 0;
+                var busy = _busy;
                 var before = (_sessionId, _permissionMode, _model);
                 switch (e)
                 {
@@ -214,7 +222,7 @@ namespace ClaudeCliProtocol
                         if (!string.IsNullOrEmpty(started.SessionId)) _sessionId = started.SessionId;
                         if (!string.IsNullOrEmpty(started.Model)) _model = started.Model;
                         if (!string.IsNullOrEmpty(started.PermissionMode)) _permissionMode = started.PermissionMode;
-                        if (_turns == 0) _turns = 1;
+                        _busy = true;
                         break;
 
                     case StatusChanged status:
@@ -222,7 +230,7 @@ namespace ClaudeCliProtocol
                         break;
 
                     case TurnCompleted _:
-                        _turns = Math.Max(0, _turns - 1); // an interrupt with the session idle also brings a result
+                        _busy = false; // also for a result with no turn running: an interrupt of an idle session brings one
                         break;
 
                     case ControlAcknowledged reply:
@@ -238,24 +246,12 @@ namespace ClaudeCliProtocol
                             case SetModel model:
                                 _model = model.Model;
                                 break;
-                            case Interrupt _:
-                                // the claude may drop queued messages: only those still queued will bring a result,
-                                // besides the interrupted turn itself
-                                if (_turns > 0 && StillQueued(reply) is { } queued) _turns = queued + 1;
-                                break;
                         }
                         break;
                 }
-                return changed || busy != (_turns > 0) || before != (_sessionId, _permissionMode, _model);
+                return changed || busy != _busy || before != (_sessionId, _permissionMode, _model);
             }
         }
-
-        private static int? StillQueued(ControlAcknowledged reply) =>
-            reply.Response is { ValueKind: JsonValueKind.Object } body
-            && body.TryGetProperty("still_queued", out var queue)
-            && queue.ValueKind == JsonValueKind.Array
-                ? queue.GetArrayLength()
-                : (int?)null;
 
         /// <summary>The transport gave its last line. True when a property changed.</summary>
         private bool Closed()
@@ -264,8 +260,8 @@ namespace ClaudeCliProtocol
             _ledger.Clear();
             lock (_gate)
             {
-                var changed = pending || _turns > 0 || _transportState != TransportState.Closed;
-                _turns = 0;
+                var changed = pending || _busy || _transportState != TransportState.Closed;
+                _busy = false;
                 _controls.Clear();
                 _transportState = TransportState.Closed;
                 return changed;

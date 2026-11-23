@@ -26,7 +26,9 @@ namespace ClaudeCliProtocol
 
         /// <summary>
         /// Follows one event of the stream. A request enters; it leaves when the claude cancels it, when the result
-        /// of its tool call arrives or when the turn ends. Returns true when the pending requests changed.
+        /// of its tool call arrives or when the turn ends. A request with the id of one already pending takes its
+        /// place. Returns true when the pending requests changed. Feed it only events parsed from the claude's own
+        /// output: what it holds is what an answer will carry.
         /// </summary>
         public bool Observe(ClaudeEvent e)
         {

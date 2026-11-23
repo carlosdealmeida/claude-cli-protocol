@@ -333,10 +333,25 @@ namespace ClaudeCliProtocol.Tests
         }
 
         [Fact]
-        public void No_public_member_takes_the_input_or_the_suggestions_from_the_caller()
+        public void The_answer_command_has_no_field_for_the_input_or_the_suggestions()
         {
             var properties = typeof(AnswerPermission).GetProperties().Select(p => p.Name).ToArray();
             Assert.Equal(new[] { "RequestId", "Decision", "Message" }, properties);
+        }
+
+        [Fact]
+        public void The_writer_trusts_the_request_it_is_given()
+        {
+            // Where the rule binds: Write copies the input of the request it receives. Only the side that read the
+            // request from the claude's stdout may call it, with the request a PermissionLedger handed out; a
+            // request that came from anywhere else would be written just the same.
+            var received = Received();
+            var other = received with { Input = J("{\"file_path\":\"somewhere-else.txt\"}") };
+
+            var body = Parse(StdinWriter.Write(new AnswerPermission("req-7", PermissionDecision.Allow), other))
+                .GetProperty("response").GetProperty("response");
+
+            Assert.Equal("somewhere-else.txt", body.GetProperty("updatedInput").GetProperty("file_path").GetString());
         }
 
         [Fact]

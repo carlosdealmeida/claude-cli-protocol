@@ -55,8 +55,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose
 
 ## 安全性
 
-對權限請求的答覆一律帶有處理程序一側從 `claude` 本身收到的 `input` 和 `permission_suggestions`。
-呼叫端只能選擇請求、決定和訊息，無法變更工具將要執行的內容。
+對權限請求的答覆一律帶有處理程序一側從 `claude` 本身收到的 `input` 和 `permission_suggestions`。傳送命令的一方只能選擇請求、決定和訊息：答覆命令中沒有 `input` 欄位。向 `claude` 的 stdin 寫入的一方用它自己讀到的請求來建構答覆，每個請求只答覆一次。
 
 如需回報漏洞，請參閱[安全性原則](SECURITY.en.md)（英文）。
 

@@ -62,8 +62,9 @@ tipados e os comandos em linhas.
 ## Segurança
 
 A resposta a um pedido de permissão leva sempre o `input` e as `permission_suggestions` que o lado
-do processo recebeu do próprio `claude`. Quem chama só escolhe o pedido, a decisão e a mensagem,
-e não tem como trocar o que a ferramenta vai executar.
+do processo recebeu do próprio `claude`. Quem manda o comando só escolhe o pedido, a decisão e a
+mensagem: o comando de resposta não tem campo para o `input`. Quem escreve no stdin do `claude`
+monta a resposta com o pedido que ele mesmo leu, e cada pedido é respondido uma vez só.
 
 Para relatar uma falha, veja a [política de segurança](SECURITY.md).
 

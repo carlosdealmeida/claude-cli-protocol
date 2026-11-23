@@ -61,9 +61,11 @@ las líneas en eventos tipados y los comandos en líneas.
 
 ## Seguridad
 
-La respuesta a una solicitud de permiso lleva siempre el `input` y las `permission_suggestions`
-que el lado del proceso recibió del propio `claude`. Quien llama solo elige la solicitud, la
-decisión y el mensaje, y no tiene forma de cambiar lo que la herramienta va a ejecutar.
+La respuesta a una solicitud de permiso lleva siempre el `input` y las `permission_suggestions` que
+el lado del proceso recibió del propio `claude`. Quien envía el comando solo elige la solicitud, la
+decisión y el mensaje: el comando de respuesta no tiene campo para el `input`. Quien escribe en el
+stdin de `claude` arma la respuesta con la solicitud que él mismo leyó, y cada solicitud se responde
+una sola vez.
 
 Para reportar un fallo, consulta la [política de seguridad](SECURITY.es.md).
 

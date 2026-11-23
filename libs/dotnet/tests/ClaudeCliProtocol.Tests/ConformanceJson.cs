@@ -142,16 +142,7 @@ namespace ClaudeCliProtocol.Tests
                 default:
                     {
                         var type = value.GetType();
-                        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
-                        {
-                            writer.WriteStartObject();
-                            writer.WritePropertyName("key");
-                            Value(writer, type.GetProperty("Key")!.GetValue(value));
-                            writer.WritePropertyName("value");
-                            Value(writer, type.GetProperty("Value")!.GetValue(value));
-                            writer.WriteEndObject();
-                        }
-                        else if (type.Assembly == typeof(ClaudeEvent).Assembly && type.IsClass)
+                        if (type.Assembly == typeof(ClaudeEvent).Assembly && type.IsClass)
                         {
                             writer.WriteStartObject();
                             Fields(writer, value);

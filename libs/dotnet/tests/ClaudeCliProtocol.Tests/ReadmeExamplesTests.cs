@@ -53,15 +53,29 @@ namespace ClaudeCliProtocol.Tests
         public void Write_a_line_for_the_claude()
         {
             var parser = new StreamJsonParser();
-            var request = FixtureFiles.StreamLines("edit").SelectMany(parser.Parse).OfType<PermissionRequested>().First();
+            var ledger = new PermissionLedger();
+            foreach (var e in FixtureFiles.StreamLines("edit").SelectMany(parser.Parse))
+            {
+                ledger.Observe(e);
+                if (ledger.Pending.Count > 0) break;
+            }
+            var answer = new AnswerPermission(ledger.Pending[0].RequestId, PermissionDecision.Deny, "not this file");
+            var lines = new List<string>();
 
             // --- README ---
             var message = StdinWriter.Write(new SendUserMessage("hello"));
-            var answer = StdinWriter.Write(new AnswerPermission(request.RequestId, PermissionDecision.Deny, "not this file"), request);
+
+            // the ledger saw the request when it was read from the claude's stdout; it hands each request out once
+            if (ledger.TryTake(answer.RequestId, out var request))
+            {
+                var line = StdinWriter.Write(answer, request!);
+                lines.Add(line);
+            }
             // --- /README ---
 
             Assert.StartsWith("{\"type\":\"user\"", message);
-            Assert.Contains("\"behavior\":\"deny\"", answer);
+            Assert.Contains("\"behavior\":\"deny\"", Assert.Single(lines));
+            Assert.False(ledger.TryTake(answer.RequestId, out _)); // the second answer finds nothing
         }
     }
 }
