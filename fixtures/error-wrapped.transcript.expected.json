@@ -1,0 +1,13 @@
+{
+  "format": 1,
+  "events": [
+    {"line":1,"event":"user_block","fields":{"parent_tool_use_id":null,"block":{"kind":"text","text":"Without reading it first, use the Edit tool on notes.md to replace the exact text 'no such line here' with 'x'. Do not retry; just say what happened in one sentence."},"tool_use_result":null,"is_meta":false,"is_compact_summary":false,"timestamp":"2026-11-20T16:20:15.682Z","images":[],"is_synthetic":false,"origin":null,"uuid":"5871d216-a0d5-4bdf-9b24-8abe3522c5bb","is_queued_command":false}},
+    {"line":2,"event":"assistant_block","fields":{"message_id":"msg_011ChEV5XSoyH3KBhk5TRm7M","parent_tool_use_id":null,"block":{"kind":"thinking","text":""},"timestamp":"2026-11-20T16:20:18.261Z","thinking_duration_ms":3,"uuid":"96a2bdcb-615a-43db-b3d8-6823505d5d2e","supersedes":[],"is_synthetic":false}},
+    {"line":2,"event":"prompt_cache_used","fields":{"ttl":3600000,"at":"2026-11-20T16:20:18.261Z"}},
+    {"line":3,"event":"assistant_block","fields":{"message_id":"msg_011ChEV5XSoyH3KBhk5TRm7M","parent_tool_use_id":null,"block":{"kind":"tool_use","id":"toolu_01UATyVvWP2ttKSjKNQSs9h1","name":"Edit","input":{"replace_all":false,"file_path":"C:\\demo\\app\\notes.md","old_string":"no such line here","new_string":"x"}},"timestamp":"2026-11-20T16:20:18.344Z","thinking_duration_ms":null,"uuid":"53cb4c82-04ca-4db6-903b-2f749db12a32","supersedes":[],"is_synthetic":false}},
+    {"line":3,"event":"prompt_cache_used","fields":{"ttl":3600000,"at":"2026-11-20T16:20:18.344Z"}},
+    {"line":4,"event":"user_block","fields":{"parent_tool_use_id":null,"block":{"kind":"tool_result","tool_use_id":"toolu_01UATyVvWP2ttKSjKNQSs9h1","text":"<tool_use_error>String to replace not found in file.\nString: no such line here</tool_use_error>","is_error":true,"non_execution_kind":null,"images":[]},"tool_use_result":"Error: String to replace not found in file.\nString: no such line here","is_meta":false,"is_compact_summary":false,"timestamp":"2026-11-20T16:20:18.616Z","images":[],"is_synthetic":false,"origin":null,"uuid":"36637e4e-12c1-4216-9de0-62807333850d","is_queued_command":false}},
+    {"line":5,"event":"assistant_block","fields":{"message_id":"msg_011ChEV5fxmsskVgUcLRZMB2","parent_tool_use_id":null,"block":{"kind":"text","text":"The Edit failed because the text \"no such line here\" was not found in notes.md, so nothing was changed and I did not retry."},"timestamp":"2026-11-20T16:20:19.444Z","thinking_duration_ms":null,"uuid":"76ce62b2-c10e-4639-9a38-34438420205f","supersedes":[],"is_synthetic":false}},
+    {"line":5,"event":"prompt_cache_used","fields":{"ttl":3600000,"at":"2026-11-20T16:20:19.444Z"}}
+  ]
+}

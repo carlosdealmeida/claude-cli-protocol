@@ -8,8 +8,8 @@ esperado.
 
 A pasta tem 42 gravações: 21 cenários, dois arquivos cada. Foram gravadas pelo `tools/gravar.py`
 do [Claude Visual Chat](https://github.com/carlosdealmeida/claude-visual-chat) e copiadas de lá,
-byte a byte, do commit `16809aa`, em 2026-11-22. O resultado esperado de cada uma ainda não está
-aqui: chega no fim da fase 1.
+byte a byte, do commit `16809aa`, em 2026-11-22. Cada gravação tem ao lado o seu resultado
+esperado (`.expected.json`), 42 arquivos gerados pela lib .NET em 2026-11-23.
 
 Os cenários: `edit`, `bash`, `subagent`, `error`, `denied`, `interrupted`, `mode-and-model`,
 `image`, `commands`, `effort`, `plan`, `plan-auto`, `plan-feedback`, `queued`, `hook-blocked`,
@@ -24,7 +24,64 @@ Dois arquivos por cenário:
 - `<cenário>.transcript.jsonl`: o arquivo da mesma sessão que o Claude Code grava em disco.
 
 E, para cada um deles, o resultado esperado em JSON neutro: a lista de eventos, sem nada que seja
-de uma linguagem só. O formato é definido na fase 1.
+de uma linguagem só.
+
+- `<cenário>.stream.expected.json`: os eventos que saem do `.stream.ndjson`;
+- `<cenário>.transcript.expected.json`: os eventos que saem do `.transcript.jsonl`.
+
+## O formato do resultado esperado (versão 1)
+
+```json
+{
+  "format": 1,
+  "events": [
+    {"line":1,"event":"session_started","fields":{"session_id":"…","model":"…","working_directory":"C:\\demo\\app","permission_mode":"default","claude_version":"…","terminal_commands":[],"fast_mode_state":null,"ultrathink_available":null}}
+  ]
+}
+```
+
+Um evento por linha do arquivo, para uma mudança aparecer como uma linha no diff.
+
+- **`line`:** o número da linha na gravação, contando do 1 e sem contar as linhas em branco. Uma
+  linha pode dar nenhum, um ou mais eventos.
+- **`event`:** o nome do evento em `snake_case` (`AssistantBlock` na lib .NET é
+  `assistant_block`).
+- **`fields`:** todos os dados do evento, com o nome em `snake_case`. Um campo sem valor aparece
+  como `null`; ele não some.
+- **Valores:** texto, número e booleano como são. Um enum vai pelo nome em `snake_case`
+  (`input_json`). Uma duração vai em milissegundos inteiros. Uma data vai em ISO 8601, em UTC, com
+  milissegundos e `Z` (`2026-11-22T13:30:05.250Z`). Um valor JSON que o `claude` mandou (o `input`
+  de uma ferramenta, as sugestões de permissão) vai como veio. Uma lista vai como array, e um
+  objeto aninhado segue a mesma regra dos campos.
+- **Bloco de conteúdo:** um objeto com `"kind"` (`text`, `thinking`, `tool_use`, `tool_result` ou
+  `image`) e os campos dele.
+- **Imagem:** o `data` não vai inteiro. Vira `{"length": <caracteres do base64>, "sha256": "<hex
+  minúsculo dos bytes UTF-8 do texto base64>"}`.
+
+A comparação é estrutural: a ordem das chaves de um objeto não importa, a ordem dos itens de um
+array importa, e um número é comparado pelo valor, com tolerância de `1e-9`.
+
+### De onde vêm e o que provam
+
+Os 42 arquivos foram escritos pela própria lib .NET. Por isso, passar neles prova duas coisas e
+só essas: que as duas builds da lib (`net6.0` e `netstandard2.0`) dão o mesmo resultado, e que uma
+mudança de comportamento aparece como diferença. Não prova, sozinho, que cada campo está certo.
+Três cenários (`edit`, `denied` e `mode-and-model`) foram conferidos por fora, com um script que
+lê a gravação crua: o início da sessão, cada pedido de permissão com o `input` inteiro e cada fim
+de turno com os tokens somados. Os outros 39 estão como foram gerados.
+
+As gravações exercitam 27 dos 36 tipos de evento da lib. Não aparecem em nenhuma:
+`hook_started`, `hook_finished`, `command_lifecycle`, `per_turn_effort_changed`,
+`usage_limits_reported`, `account_reported`, `remote_control_changed`, `model_refusal_fallback`
+e `peer_message_hold`. Esses só têm os testes de unidade.
+
+Para regenerar depois de uma mudança de propósito, rode os testes de conformidade com a variável
+`CCP_UPDATE_EXPECTED=1` (eles falham dizendo que escreveram os arquivos), leia o diff e rode de
+novo sem a variável:
+
+```bash
+CCP_UPDATE_EXPECTED=1 dotnet test libs/dotnet -c Release --framework net6.0 --filter "FullyQualifiedName~ConformanceTests"
+```
 
 ## Privacidade
 

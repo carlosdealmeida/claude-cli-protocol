@@ -1,0 +1,11 @@
+{
+  "format": 1,
+  "events": [
+    {"line":1,"event":"user_block","fields":{"parent_tool_use_id":null,"block":{"kind":"text","text":"Use the Write tool to create a.txt containing the word one. Be brief."},"tool_use_result":null,"is_meta":false,"is_compact_summary":false,"timestamp":"2026-11-20T17:05:45.102Z","images":[],"is_synthetic":false,"origin":null,"uuid":"9c08dfb3-426c-4827-81e3-15401b77b545","is_queued_command":false}},
+    {"line":2,"event":"assistant_block","fields":{"message_id":"msg_011ChEYYg2rRQU9EGRAy4YM6","parent_tool_use_id":null,"block":{"kind":"tool_use","id":"toolu_01DocrFF2GPDRZkEPMFhJZwe","name":"Write","input":{"file_path":"C:\\demo\\app\\a.txt","content":"one"}},"timestamp":"2026-11-20T17:05:46.553Z","thinking_duration_ms":null,"uuid":"287b0ce9-552f-4d59-ac3d-03c5f6a4db11","supersedes":[],"is_synthetic":false}},
+    {"line":2,"event":"prompt_cache_used","fields":{"ttl":3600000,"at":"2026-11-20T17:05:46.553Z"}},
+    {"line":3,"event":"user_block","fields":{"parent_tool_use_id":null,"block":{"kind":"tool_result","tool_use_id":"toolu_01DocrFF2GPDRZkEPMFhJZwe","text":"File created successfully at: C:\\demo\\app\\a.txt (file state is current in your context — no need to Read it back)","is_error":false,"non_execution_kind":null,"images":[]},"tool_use_result":{"type":"create","filePath":"C:\\demo\\app\\a.txt","content":"one","structuredPatch":[],"originalFile":null,"userModified":false},"is_meta":false,"is_compact_summary":false,"timestamp":"2026-11-20T17:05:47.719Z","images":[],"is_synthetic":false,"origin":null,"uuid":"8bf84f50-cca3-46c4-9455-98e0c8c0c0ed","is_queued_command":false}},
+    {"line":4,"event":"assistant_block","fields":{"message_id":"msg_011ChEYYqj1SGgamQozUBuCB","parent_tool_use_id":null,"block":{"kind":"text","text":"Created `a.txt` in the working directory with the word \"one\"."},"timestamp":"2026-11-20T17:05:48.569Z","thinking_duration_ms":null,"uuid":"d68697f7-84b3-422c-a1cf-e3a87211e361","supersedes":[],"is_synthetic":false}},
+    {"line":4,"event":"prompt_cache_used","fields":{"ttl":3600000,"at":"2026-11-20T17:05:48.569Z"}}
+  ]
+}
