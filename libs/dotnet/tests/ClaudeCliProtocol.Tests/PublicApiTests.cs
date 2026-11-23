@@ -25,6 +25,16 @@ namespace ClaudeCliProtocol.Tests
         }
 
         [Fact]
+        public void The_catalog_uses_the_names_of_this_library()
+        {
+            Assert.Contains("ClaudeCliProtocol.SlashCommand", Names);
+            Assert.Contains("ClaudeCliProtocol.ModelOption", Names);
+            Assert.DoesNotContain("ClaudeCliProtocol.ChatCommand", Names);
+            Assert.DoesNotContain("ClaudeCliProtocol.ChatModel", Names);
+            Assert.True(typeof(UsageLimits).GetProperty("IsSnapshot")!.GetMethod!.IsPublic);
+        }
+
+        [Fact]
         public void Every_public_type_is_in_the_one_namespace()
         {
             Assert.All(typeof(AnsiText).Assembly.GetExportedTypes(), t => Assert.Equal("ClaudeCliProtocol", t.Namespace));
