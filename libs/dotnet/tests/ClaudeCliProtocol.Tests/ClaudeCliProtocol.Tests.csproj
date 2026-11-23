@@ -15,6 +15,15 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
   </ItemGroup>
 
+  <!-- the recordings of fixtures/, copied next to the test assembly -->
+  <ItemGroup>
+    <None Include="..\..\..\..\fixtures\**\*" Exclude="..\..\..\..\fixtures\README.md"
+          Link="fixtures\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- each one's private words for FixturePrivacyTests; git ignores the file -->
+    <None Include="..\private-words.txt" Condition="Exists('..\private-words.txt')"
+          Link="private-words.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\ClaudeCliProtocol\ClaudeCliProtocol.csproj" />
   </ItemGroup>

@@ -6,9 +6,14 @@ esperado.
 
 ## Estado
 
-Em 2026-11-22 a pasta está vazia. As gravações chegam na fase 1, vindas do
-[Claude Visual Chat](https://github.com/carlosdealmeida/claude-visual-chat), onde existem hoje
-(21 cenários).
+A pasta tem 42 gravações: 21 cenários, dois arquivos cada. Foram gravadas pelo `tools/gravar.py`
+do [Claude Visual Chat](https://github.com/carlosdealmeida/claude-visual-chat) e copiadas de lá,
+byte a byte, do commit `16809aa`, em 2026-11-22. O resultado esperado de cada uma ainda não está
+aqui: chega no fim da fase 1.
+
+Os cenários: `edit`, `bash`, `subagent`, `error`, `denied`, `interrupted`, `mode-and-model`,
+`image`, `commands`, `effort`, `plan`, `plan-auto`, `plan-feedback`, `queued`, `hook-blocked`,
+`queued-compact`, `error-long`, `error-wrapped`, `denied-long`, `hook-ask` e `seguranca`.
 
 ## O que entra aqui
 
@@ -25,8 +30,11 @@ de uma linguagem só. O formato é definido na fase 1.
 
 Uma gravação é uma sessão de verdade. Nenhuma entra aqui com dado pessoal de quem gravou: nome de
 usuário, pastas, e-mail ou credencial. O gravador troca tudo isso por valores de demonstração, e o
-teste de privacidade confere cada arquivo. Nenhum dos dois está neste repositório ainda: o teste
-chega na fase 1, com as gravações, e o gravador na fase 2.
+teste de privacidade (`FixturePrivacyTests`, em `libs/dotnet/tests/`) confere cada arquivo. O
+gravador ainda não está neste repositório: chega na fase 2.
+
+Para o teste procurar também as suas próprias palavras (seu usuário, sua empresa, suas pastas),
+escreva uma por linha em `libs/dotnet/tests/private-words.txt`. O git ignora esse arquivo.
 
 ## Regravação
 
