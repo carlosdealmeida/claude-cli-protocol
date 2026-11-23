@@ -45,6 +45,16 @@ namespace ClaudeCliProtocol.Tests
         }
 
         [Fact]
+        public void The_commands_and_their_writer_are_public()
+        {
+            foreach (var name in new[] { "ClaudeCommand", "ControlCommand", "SendUserMessage", "AnswerPermission",
+                                         "PermissionDecision", "ImageData", "StdinWriter" })
+                Assert.Contains("ClaudeCliProtocol." + name, Names);
+            // the CVC keeps a StdinMessages of its own: one name in two libraries would clash in an app that uses both
+            Assert.DoesNotContain("ClaudeCliProtocol.StdinMessages", Names);
+        }
+
+        [Fact]
         public void Every_public_type_is_in_the_one_namespace()
         {
             Assert.All(typeof(AnsiText).Assembly.GetExportedTypes(), t => Assert.Equal("ClaudeCliProtocol", t.Namespace));
