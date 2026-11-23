@@ -15,11 +15,11 @@ lo hablan, primero en .NET y después en Delphi.
 
 ## Estado
 
-**Fase 0, a 2026-11-22.** El repositorio tiene la estructura, la documentación en los cinco
-idiomas, la CI y el esqueleto del sitio. La biblioteca .NET aún está vacía: el código llega en la
-fase 1, desde la carpeta `Protocol/` de
-[Claude Visual Chat](https://github.com/carlosdealmeida/claude-visual-chat). No se ha publicado
-ningún paquete y el sitio todavía no está en línea.
+**Fase 1, a 2026-11-23.** La biblioteca .NET lee y escribe el protocolo: eventos, los dos parsers,
+comandos, sesión y reproducción de grabaciones. El código vino de la carpeta `Protocol/` de [Claude
+Visual Chat](https://github.com/carlosdealmeida/claude-visual-chat) y pasa las 42 grabaciones de
+`fixtures/`, en los dos targets. Todavía no inicia `claude` por sí sola: ese transporte es la fase
+2. No se ha publicado ningún paquete y el sitio todavía no está en línea.
 
 ## Qué hay aquí
 

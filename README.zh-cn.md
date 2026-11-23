@@ -16,9 +16,7 @@
 
 ## 状态
 
-**第 0 阶段，截至 2026-11-22。** 仓库已有目录结构、五种语言的文档、CI 和网站骨架。.NET 库目前还是空的：
-代码将在第 1 阶段到来，来自 [Claude Visual Chat](https://github.com/carlosdealmeida/claude-visual-chat)
-的 `Protocol/` 文件夹。尚未发布任何软件包，网站也尚未上线。
+**第 1 阶段，截至 2026-11-23。** .NET 库已能读写该协议：事件、两个解析器、命令、会话和录制回放。代码来自 [Claude Visual Chat](https://github.com/carlosdealmeida/claude-visual-chat) 的 `Protocol/` 文件夹，并在两个目标框架上通过了 `fixtures/` 中的 42 份录制。它目前还不能自行启动 `claude`：该传输层属于第 2 阶段。尚未发布任何软件包，网站也尚未上线。
 
 ## 这里有什么
 
