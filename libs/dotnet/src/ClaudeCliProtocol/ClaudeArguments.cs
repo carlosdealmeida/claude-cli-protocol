@@ -68,6 +68,9 @@ namespace ClaudeCliProtocol
             return args;
         }
 
+        /// <summary>True for a mode of <see cref="PermissionModes"/>.</summary>
+        internal static bool IsPermissionMode(string? mode) => Contains(PermissionModes, mode);
+
         private static bool Contains(IReadOnlyList<string> values, string? value)
         {
             foreach (var candidate in values)

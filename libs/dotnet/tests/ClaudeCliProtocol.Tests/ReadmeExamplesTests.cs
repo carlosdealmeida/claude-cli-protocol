@@ -53,14 +53,23 @@ namespace ClaudeCliProtocol.Tests
         [Fact]
         public async Task Talk_to_the_claude_of_this_machine()
         {
-            // the make-believe claude plays a whole real recording: an Edit and a Write, each asked about
+            // The make-believe claude plays a whole real recording, an Edit and a Write, each asked about. It waits
+            // where the real one would: for the handshake and the message before anything, and for an answer after
+            // each permission request. An answer that is never written leaves it waiting, and the test fails.
+            // What an answer carries is checked in ProcessTransportSendTests.
+            var script = new List<string> { "{\"type\":\"fake_read\",\"count\":2}" };
+            foreach (var recorded in FixtureFiles.StreamLines("edit"))
+            {
+                script.Add(recorded);
+                if (recorded.Contains("\"can_use_tool\"")) script.Add("{\"type\":\"fake_read\",\"count\":1}");
+            }
             var projectFolder = FakeClaudeHost.TempFolder();
             var options = new ProcessTransportOptions(projectFolder)
             {
                 ClaudePath = FakeClaudeHost.Path,
                 Environment = new Dictionary<string, string?>
                 {
-                    ["FAKE_CLAUDE_SCRIPT"] = Path.Combine(FixtureFiles.Directory, "edit.stream.ndjson"),
+                    ["FAKE_CLAUDE_SCRIPT"] = FakeClaudeHost.Script(script.ToArray()),
                 },
             };
             var reply = new System.Text.StringBuilder();

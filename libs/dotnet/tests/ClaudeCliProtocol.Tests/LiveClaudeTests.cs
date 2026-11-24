@@ -6,19 +6,26 @@ using Xunit;
 
 namespace ClaudeCliProtocol.Tests
 {
+    /// <summary>A fact that is skipped unless CCP_LIVE_CLAUDE=1.</summary>
+    public sealed class LiveFactAttribute : FactAttribute
+    {
+        public LiveFactAttribute()
+        {
+            if (!LiveClaudeTests.Enabled) Skip = "Set CCP_LIVE_CLAUDE=1 to run it against the real claude of this machine.";
+        }
+    }
+
     /// <summary>
     /// The one test that starts the real claude. It uses the claude of this machine, with whatever account it is
-    /// signed in to, so it runs only when asked: set CCP_LIVE_CLAUDE=1. Without it the test returns at once.
+    /// signed in to, so it runs only when asked: set CCP_LIVE_CLAUDE=1. Without it the test is skipped.
     /// </summary>
     public class LiveClaudeTests
     {
         internal static bool Enabled => Environment.GetEnvironmentVariable("CCP_LIVE_CLAUDE") == "1";
 
-        [Fact]
+        [LiveFact]
         public async Task A_real_claude_answers_one_message()
         {
-            if (!Enabled) return;
-
             // plan mode, in a new empty folder: the claude may read, and writes nothing
             var transport = new ProcessTransport(new ProcessTransportOptions(FakeClaudeHost.TempFolder()) { PermissionMode = "plan" });
             await using var session = new ClaudeSession(transport);

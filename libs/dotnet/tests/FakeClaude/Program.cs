@@ -14,7 +14,8 @@ namespace FakeClaude
     /// 2. Writes {"type":"fake_start","args":[...],"cwd":"...","env":{...}} with the environment variables whose
     ///    name starts with FAKE_ or CLAUDE_, or is NoDefaultCurrentDirectoryInExePath.
     /// 3. FAKE_CLAUDE_STDERR_LINES=N: writes N lines of 200 characters to stderr.
-    /// 4. FAKE_CLAUDE_SCRIPT=file: writes each line of the file to stdout.
+    /// 4. FAKE_CLAUDE_SCRIPT=file: writes each line of the file to stdout. A line {"type":"fake_read","count":N}
+    ///    is not written: there it reads N lines from stdin, as in step 7, and only then goes on.
     /// 5. FAKE_CLAUDE_EXIT_NOW=N: exits with N without reading stdin.
     /// 6. FAKE_CLAUDE_CHILD=1: starts a child of itself that sleeps and inherits its stdout, and writes
     ///    {"type":"fake_child","pid":N}.
@@ -62,7 +63,26 @@ namespace FakeClaude
 
             var script = Environment.GetEnvironmentVariable("FAKE_CLAUDE_SCRIPT");
             if (!string.IsNullOrEmpty(script))
-                foreach (var line in File.ReadAllLines(script, utf8)) output.WriteLine(line);
+            {
+                foreach (var line in File.ReadAllLines(script, utf8))
+                {
+                    if (!TryReadCount(line, out var count))
+                    {
+                        output.WriteLine(line);
+                        continue;
+                    }
+                    for (var i = 0; i < count; i++)
+                    {
+                        var awaited = input.ReadLine();
+                        if (awaited == null) return 0;
+                        output.WriteLine(Json(w =>
+                        {
+                            w.WriteString("type", "fake_stdin");
+                            w.WriteString("line", awaited);
+                        }));
+                    }
+                }
+            }
 
             if (int.TryParse(Environment.GetEnvironmentVariable("FAKE_CLAUDE_EXIT_NOW"), out var code)) return code;
 
@@ -91,6 +111,15 @@ namespace FakeClaude
                 }));
             }
             return 0;
+        }
+
+        private static bool TryReadCount(string line, out int count)
+        {
+            count = 0;
+            if (!line.StartsWith("{\"type\":\"fake_read\"", StringComparison.Ordinal)) return false;
+            using var doc = JsonDocument.Parse(line);
+            count = doc.RootElement.GetProperty("count").GetInt32();
+            return true;
         }
 
         private static bool TryExitCode(string line, out int code)

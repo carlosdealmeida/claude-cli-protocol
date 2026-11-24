@@ -47,8 +47,9 @@ namespace ClaudeCliProtocol.Tests
         }
 
         /// <summary>
-        /// After the queued lines, the transport gives null. It reports Closed when that null is handed out, as a
-        /// real transport does: its last lines come before its end.
+        /// After the queued lines, the transport gives null. It reports Closed when that null is handed out. The
+        /// process transport reports it earlier, when the claude ends: a test that needs that order calls
+        /// <see cref="Raise"/> itself.
         /// </summary>
         public void Close()
         {

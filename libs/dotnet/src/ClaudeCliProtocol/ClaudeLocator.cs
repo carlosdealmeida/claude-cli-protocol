@@ -54,7 +54,7 @@ namespace ClaudeCliProtocol
         }
 
         /// <summary>A drive and a root (<c>C:\x</c>) or a share (<c>\\server\x</c>) on Windows; a leading slash elsewhere.</summary>
-        private static bool IsAbsolute(string folder, bool windows)
+        internal static bool IsAbsolute(string folder, bool windows)
         {
             if (!windows) return folder.Length > 0 && folder[0] == '/';
             if (folder.Length >= 3 && char.IsLetter(folder[0]) && folder[1] == ':' && (folder[2] == '\\' || folder[2] == '/'))

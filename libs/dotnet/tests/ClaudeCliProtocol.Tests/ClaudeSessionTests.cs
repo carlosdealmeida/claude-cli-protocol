@@ -117,6 +117,26 @@ namespace ClaudeCliProtocol.Tests
         }
 
         [Fact]
+        public async Task Lines_not_read_yet_when_the_transport_tells_its_end_are_still_handed_out()
+        {
+            // the process transport tells its end when the claude ends, with its last lines still to be read
+            var transport = new ScriptedTransport();
+            await using var session = new ClaudeSession(transport);
+            await session.SendAsync(new SendUserMessage("one"));
+            transport.Enqueue(Init);
+            transport.Enqueue(Result);
+            transport.Raise(TransportState.Closed);
+            transport.Close();
+
+            var events = await Drain(session);
+
+            Assert.Single(events.OfType<SessionStarted>());
+            Assert.Single(events.OfType<TurnCompleted>());
+            Assert.False(session.IsBusy);
+            Assert.Equal(TransportState.Closed, session.TransportState);
+        }
+
+        [Fact]
         public async Task A_queued_message_that_gets_its_own_turn_makes_the_session_busy_again()
         {
             var transport = new ScriptedTransport();

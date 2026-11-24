@@ -70,6 +70,24 @@ namespace ClaudeCliProtocol.Tests
         }
 
         [Fact]
+        public async Task Initialize_goes_first_also_when_a_subscriber_sends_as_the_transport_opens()
+        {
+            await using var transport = new ProcessTransport(Options() with { SendInitialize = true });
+            Task? early = null;
+            transport.StateChanged += (_, state) =>
+            {
+                if (state == TransportState.Open) early = transport.SendAsync(new SendUserMessage("early"), CancellationToken.None);
+            };
+
+            transport.Start();
+
+            Assert.Equal("fake_start", (await Next(transport)).GetProperty("type").GetString());
+            Assert.Equal("initialize", J(await Written(transport)).GetProperty("request").GetProperty("subtype").GetString());
+            Assert.Equal("early", J(await Written(transport)).GetProperty("message").GetProperty("content").GetString());
+            await early!;
+        }
+
+        [Fact]
         public async Task Start_does_not_wait_for_a_claude_that_talks_before_it_listens()
         {
             // a claude that writes a lot as soon as it starts, before it reads its stdin: Start must come back,
@@ -192,6 +210,49 @@ namespace ClaudeCliProtocol.Tests
         }
 
         [Fact]
+        public async Task A_permission_request_the_parser_cannot_read_is_answered_with_an_error()
+        {
+            // no tool name: the parser gives no event, so nobody could ever answer it, and the claude would wait
+            var broken = "{\"type\":\"control_request\",\"request_id\":\"bad_1\",\"request\":{\"subtype\":\"can_use_tool\",\"input\":{}}}";
+            await using var transport = await Started(("FAKE_CLAUDE_SCRIPT", FakeClaudeHost.Script(broken)));
+
+            Assert.Equal("bad_1", (await Next(transport)).GetProperty("request_id").GetString());
+
+            Assert.Equal(
+                "{\"type\":\"control_response\",\"response\":{\"subtype\":\"error\",\"request_id\":\"bad_1\",\"error\":\"malformed permission request\"}}",
+                await Written(transport));
+        }
+
+        [Fact]
+        public async Task A_permission_mode_outside_the_list_is_refused_and_not_written()
+        {
+            await using var transport = await Started();
+
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                transport.SendAsync(new SetPermissionMode("bypassPermissions"), CancellationToken.None));
+
+            await AssertNothingWasWrittenBefore(transport, "marker");
+            await transport.SendAsync(new SetPermissionMode("acceptEdits"), CancellationToken.None); // one of the list still goes
+            Assert.Equal("acceptEdits", J(await Written(transport)).GetProperty("request").GetProperty("mode").GetString());
+        }
+
+        [Fact]
+        public async Task A_send_that_waits_for_its_turn_to_write_can_be_cancelled()
+        {
+            // this claude never reads its stdin: the first write fills the pipe and holds the turn to write
+            await using var transport = new ProcessTransport(Options(("FAKE_CLAUDE_SLEEP", "1")));
+            transport.Start();
+            var stuck = transport.SendAsync(new SendUserMessage(new string('x', 1 << 20)), CancellationToken.None);
+            using var patience = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
+
+            var interrupt = transport.SendAsync(new Interrupt(), patience.Token);
+
+            Assert.True(await Task.WhenAny(interrupt, Task.Delay(TimeSpan.FromSeconds(20))) == interrupt, "The send did not give up.");
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => interrupt);
+            Assert.False(stuck.IsCompleted);
+        }
+
+        [Fact]
         public async Task Every_line_written_is_ascii_and_comes_back_equal()
         {
             await using var transport = await Started();
@@ -228,18 +289,25 @@ namespace ClaudeCliProtocol.Tests
             await Assert.ThrowsAsync<ArgumentNullException>(() => transport.SendAsync(null!, CancellationToken.None));
         }
 
+        /// <summary>Makes a line longer than a pipe's buffer, so a write is not whole by itself.</summary>
+        private static readonly string Padding = " " + new string('p', 9000);
+
         [Fact]
         public async Task Writes_from_two_threads_do_not_mix()
         {
             await using var transport = await Started();
 
             await Task.WhenAll(
-                Task.Run(async () => { for (var i = 0; i < 100; i++) await transport.SendAsync(new SendUserMessage("a-" + i), CancellationToken.None); }),
-                Task.Run(async () => { for (var i = 0; i < 100; i++) await transport.SendAsync(new SendUserMessage("b-" + i), CancellationToken.None); }));
+                Task.Run(async () => { for (var i = 0; i < 100; i++) await transport.SendAsync(new SendUserMessage("a-" + i + Padding), CancellationToken.None); }),
+                Task.Run(async () => { for (var i = 0; i < 100; i++) await transport.SendAsync(new SendUserMessage("b-" + i + Padding), CancellationToken.None); }));
 
             var texts = new List<string>();
             for (var i = 0; i < 200; i++)
-                texts.Add(J(await Written(transport)).GetProperty("message").GetProperty("content").GetString()!); // every line is whole JSON
+            {
+                var text = J(await Written(transport)).GetProperty("message").GetProperty("content").GetString()!; // every line is whole JSON
+                Assert.EndsWith(Padding, text);
+                texts.Add(text.Substring(0, text.Length - Padding.Length));
+            }
             Assert.Equal(Enumerable.Range(0, 100).Select(i => "a-" + i).ToArray(), texts.Where(t => t.StartsWith("a-")).ToArray());
             Assert.Equal(Enumerable.Range(0, 100).Select(i => "b-" + i).ToArray(), texts.Where(t => t.StartsWith("b-")).ToArray());
         }

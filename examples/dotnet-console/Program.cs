@@ -22,7 +22,8 @@ namespace ClaudeConsole
                 transport = new ProcessTransport(new ProcessTransportOptions(folder));
                 transport.Start();
             }
-            catch (Exception e) when (e is FileNotFoundException || e is DirectoryNotFoundException || e is ArgumentException)
+            catch (Exception e) when (e is FileNotFoundException || e is DirectoryNotFoundException || e is ArgumentException
+                || e is System.ComponentModel.Win32Exception)
             {
                 Console.Error.WriteLine(e.Message);
                 return 1;

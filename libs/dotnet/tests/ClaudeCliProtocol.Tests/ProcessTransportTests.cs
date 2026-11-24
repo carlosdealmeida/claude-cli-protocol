@@ -45,7 +45,7 @@ namespace ClaudeCliProtocol.Tests
             return lines;
         }
 
-        private static bool IsGone(int pid)
+        internal static bool IsGone(int pid)
         {
             try
             {

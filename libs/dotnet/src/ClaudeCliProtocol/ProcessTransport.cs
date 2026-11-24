@@ -45,11 +45,18 @@ namespace ClaudeCliProtocol
         private bool _completed;
         private bool _disposed;
 
-        /// <summary>Checks the options at once: a refused value throws <see cref="ArgumentException"/> here.</summary>
+        /// <summary>
+        /// Checks the options at once: a refused value throws <see cref="ArgumentException"/> here. So does a
+        /// <see cref="ProcessTransportOptions.ClaudePath"/> that is not absolute: a bare name would be looked for in
+        /// the current folder.
+        /// </summary>
         public ProcessTransport(ProcessTransportOptions options)
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _arguments = ClaudeArguments.Build(options);
+            if (options.ClaudePath != null
+                && !ClaudeLocator.IsAbsolute(options.ClaudePath, RuntimeInformation.IsOSPlatform(OSPlatform.Windows)))
+                throw new ArgumentException("The path of the claude must be absolute.", nameof(options));
         }
 
         /// <summary>The exit code, once the process has ended; null before. It is the only sign of a start that failed.</summary>
@@ -70,11 +77,23 @@ namespace ClaudeCliProtocol
         /// </summary>
         internal TimeSpan DrainTimeout { get; set; } = TimeSpan.FromSeconds(10);
 
+        /// <summary>For the tests: runs right before the process is started.</summary>
+        internal Action? BeforeSpawn { get; set; }
+
+        /// <summary>For the tests: the id of the process this transport started; null when it started none.</summary>
+        internal int? SpawnedProcessId { get; private set; }
+
+        /// <summary>
+        /// Open when the claude has started, Closed when it has ended. An exception a subscriber throws is dropped.
+        /// </summary>
         public event EventHandler<TransportState>? StateChanged;
 
         /// <summary>
         /// Starts the claude. <see cref="FileNotFoundException"/> when there is no claude;
-        /// <see cref="DirectoryNotFoundException"/> when the working directory does not exist. Call it once.
+        /// <see cref="DirectoryNotFoundException"/> when the working directory does not exist;
+        /// <see cref="System.ComponentModel.Win32Exception"/> when the system refuses to run the file;
+        /// <see cref="ObjectDisposedException"/> when the transport was disposed, also while it started. Call it
+        /// once: after a start that failed the transport is closed, and a read gives null.
         /// </summary>
         public void Start()
         {
@@ -85,6 +104,57 @@ namespace ClaudeCliProtocol
                 _started = true;
             }
 
+            Process process;
+            TaskCompletionSource<bool> exited;
+            try
+            {
+                process = Spawn(out exited);
+            }
+            catch
+            {
+                Complete(null); // nothing will ever come: a read must not wait for a claude that never started
+                throw;
+            }
+
+            bool disposed;
+            lock (_gate)
+            {
+                disposed = _disposed;
+                if (!disposed)
+                {
+                    _process = process;
+                    _stdin = process.StandardInput.BaseStream;
+                }
+            }
+            if (disposed)
+            {
+                // disposed while the claude was starting: the dispose found no process, so it is ended here
+                KillTree(process);
+                process.Dispose();
+                throw new ObjectDisposedException(nameof(ProcessTransport));
+            }
+
+            // The handshake the official SDKs send first. The turn to write is taken here, so nothing else can be
+            // written before it; the write itself is not waited for. A claude that writes before it reads its
+            // stdin must not hold Start, and its stdout has to be read from the first moment.
+            var handshake = _options.SendInitialize ? StdinWriter.Write(new Initialize { RequestId = NewRequestId() }) : null;
+            if (handshake != null) _writing.Wait();
+
+            // The two reads block for as long as the claude lives. Each has a thread of its own: on threads of the
+            // pool, a few claudes running would leave the application with none.
+            _stdoutReader = OnItsOwnThread("claude stdout", () => ReadStdout(process));
+            _stderrReader = OnItsOwnThread("claude stderr", () => ReadStderr(process));
+            if (handshake != null) _ = Task.Run(() => WriteHeldAsync(handshake));
+
+            // Open is told with the handshake already ahead of whatever a subscriber sends, and before the end is
+            // watched for, so Closed never comes first.
+            Raise(TransportState.Open);
+            _ = WatchAsync(process, exited.Task);
+        }
+
+        /// <summary>Starts the process. Nothing of this transport knows it yet.</summary>
+        private Process Spawn(out TaskCompletionSource<bool> exited)
+        {
             var claude = _options.ClaudePath;
             if (claude == null)
                 claude = ClaudeLocator.Find() ?? throw new FileNotFoundException("claude is not on the PATH of this machine.");
@@ -116,29 +186,33 @@ namespace ClaudeCliProtocol
             }
 
             var process = new Process { StartInfo = info, EnableRaisingEvents = true };
-            var exited = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            process.Exited += (_, __) => exited.TrySetResult(true); // told by the system: no thread waits for it
+            var ended = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            process.Exited += (_, __) => ended.TrySetResult(true); // told by the system: no thread waits for it
+            exited = ended;
+            BeforeSpawn?.Invoke();
             process.Start();
-            lock (_gate)
+            SpawnedProcessId = process.Id;
+            return process;
+        }
+
+        /// <summary>
+        /// Tells the subscribers, one by one. What a subscriber throws is dropped: it must stop neither the start
+        /// nor the end of the transport, nor keep the other subscribers from hearing.
+        /// </summary>
+        private void Raise(TransportState state)
+        {
+            var handlers = StateChanged;
+            if (handlers == null) return;
+            foreach (var handler in handlers.GetInvocationList())
             {
-                _process = process;
-                _stdin = process.StandardInput.BaseStream;
+                try
+                {
+                    ((EventHandler<TransportState>)handler)(this, state);
+                }
+                catch (Exception)
+                {
+                }
             }
-            StateChanged?.Invoke(this, TransportState.Open);
-
-            // The handshake the official SDKs send first. The write lock is taken here, so nothing else can be
-            // written before it; the write itself is not waited for. A claude that writes before it reads its
-            // stdin must not hold Start, and its stdout has to be read from the first moment.
-            var handshake = _options.SendInitialize ? StdinWriter.Write(new Initialize { RequestId = NewRequestId() }) : null;
-            if (handshake != null) _writing.Wait();
-
-            // The two reads block for as long as the claude lives. Each has a thread of its own: on threads of the
-            // pool, a few claudes running would leave the application with none.
-            _stdoutReader = OnItsOwnThread("claude stdout", () => ReadStdout(process));
-            _stderrReader = OnItsOwnThread("claude stderr", () => ReadStderr(process));
-            _ = WatchAsync(process, exited.Task);
-
-            if (handshake != null) _ = Task.Run(() => WriteHeldAsync(handshake));
         }
 
         /// <summary>The next line of the claude's stdout, or null once the claude has ended. Blank lines are skipped.</summary>
@@ -161,7 +235,11 @@ namespace ClaudeCliProtocol
         /// Writes a command to the claude's stdin, one whole line at a time. A control command with no request id
         /// gets one. An answer to a permission request is written from the request this transport read from the
         /// claude; when that request is not pending here (already answered, cancelled, resolved or never seen),
-        /// nothing is written. After the claude has ended, nothing is written and nothing is thrown.
+        /// nothing is written. After the claude has ended, nothing is written and nothing is thrown. A
+        /// <see cref="SetPermissionMode"/> with a mode outside <see cref="ClaudeArguments.PermissionModes"/> throws
+        /// <see cref="ArgumentException"/> and writes nothing. The token cancels the wait for the turn to write,
+        /// which lasts while a claude that stopped reading holds an earlier write; a write that began is finished,
+        /// because half a line would break the stream.
         /// </summary>
         public async Task SendAsync(ClaudeCommand command, CancellationToken ct)
         {
@@ -178,6 +256,9 @@ namespace ClaudeCliProtocol
                 case SendUserMessage message:
                     line = StdinWriter.Write(message);
                     break;
+                case SetPermissionMode mode when !ClaudeArguments.IsPermissionMode(mode.Mode):
+                    throw new ArgumentException(
+                        "Permission mode refused; accepted: " + string.Join(", ", ClaudeArguments.PermissionModes) + ".", nameof(command));
                 case ControlCommand control:
                     line = StdinWriter.Write(control.RequestId == null ? control with { RequestId = NewRequestId() } : control);
                     break;
@@ -187,15 +268,15 @@ namespace ClaudeCliProtocol
                 default:
                     throw new NotSupportedException("This transport cannot write a " + command.GetType().Name + ".");
             }
-            if (line != null) await SendRawAsync(line).ConfigureAwait(false);
+            if (line != null) await SendRawAsync(line, ct).ConfigureAwait(false);
         }
 
         private static string NewRequestId() => Guid.NewGuid().ToString("N");
 
         /// <summary>One line to the claude's stdin, as ASCII bytes and a line feed. False when the process has ended.</summary>
-        internal async Task<bool> SendRawAsync(string line)
+        internal async Task<bool> SendRawAsync(string line, CancellationToken ct = default)
         {
-            await _writing.WaitAsync().ConfigureAwait(false);
+            await _writing.WaitAsync(ct).ConfigureAwait(false);
             return await WriteHeldAsync(line).ConfigureAwait(false);
         }
 
@@ -284,7 +365,11 @@ namespace ClaudeCliProtocol
                     line = line.TrimEnd('\r');
                     if (line.Trim().Length == 0) continue;
                     Observe(line);
-                    _lines.Enqueue(line);
+                    lock (_gate)
+                    {
+                        if (_completed) return; // the end was told: nothing comes after it
+                        _lines.Enqueue(line);
+                    }
                     _available.Release();
                 }
             }
@@ -296,22 +381,31 @@ namespace ClaudeCliProtocol
 
         /// <summary>
         /// What the transport itself takes from a line, before handing it out: the permission requests go to the
-        /// ledger, and a control request this transport does not serve is answered with an error.
+        /// ledger, and a control request nobody here can answer is answered with an error.
         /// </summary>
         private void Observe(string line)
         {
-            foreach (var e in _parser.Parse(line)) _ledger.Observe(e);
+            var asked = false;
+            foreach (var e in _parser.Parse(line))
+            {
+                _ledger.Observe(e);
+                if (e is PermissionRequested) asked = true;
+            }
 
             if (line.IndexOf("control_request", StringComparison.Ordinal) < 0) return;
-            var unserved = UnservedControlRequest(line);
-            // a hook, an MCP message, an elicitation...: without an answer the claude would wait for ever.
+            var id = ControlRequestId(line, out var isPermission);
+            if (id == null) return;
+            // A hook, an MCP message, an elicitation..., or a permission request the parser could not read, which
+            // nobody will ever see: without an answer the claude would wait for ever.
             // Not awaited here: the write may wait on the pipe, and this thread is the one that keeps stdout moving.
-            if (unserved != null) _ = SendRawAsync(StdinWriter.WriteControlError(unserved, "not supported"));
+            if (!isPermission) _ = SendRawAsync(StdinWriter.WriteControlError(id, "not supported"));
+            else if (!asked) _ = SendRawAsync(StdinWriter.WriteControlError(id, "malformed permission request"));
         }
 
-        /// <summary>The request id of a control request that is not a permission request; null for any other line.</summary>
-        private static string? UnservedControlRequest(string line)
+        /// <summary>The request id of a control request, and whether it asks a permission; null for any other line.</summary>
+        private static string? ControlRequestId(string line, out bool isPermission)
         {
+            isPermission = false;
             try
             {
                 using (var doc = JsonDocument.Parse(line))
@@ -323,10 +417,10 @@ namespace ClaudeCliProtocol
                         || !root.TryGetProperty("request_id", out var id) || id.ValueKind != JsonValueKind.String
                         || string.IsNullOrEmpty(id.GetString()))
                         return null;
-                    var isPermission = root.TryGetProperty("request", out var request) && request.ValueKind == JsonValueKind.Object
+                    isPermission = root.TryGetProperty("request", out var request) && request.ValueKind == JsonValueKind.Object
                         && request.TryGetProperty("subtype", out var subtype) && subtype.ValueKind == JsonValueKind.String
                         && subtype.GetString() == "can_use_tool";
-                    return isPermission ? null : id.GetString();
+                    return id.GetString();
                 }
             }
             catch (JsonException)
@@ -376,7 +470,7 @@ namespace ClaudeCliProtocol
             if (!first) return;
             _available.Release();
             _ended.TrySetResult(true);
-            StateChanged?.Invoke(this, TransportState.Closed);
+            Raise(TransportState.Closed);
         }
 
         private static void KillTree(Process process)
@@ -399,10 +493,15 @@ namespace ClaudeCliProtocol
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
                     };
-                    using (var killer = Process.Start(taskkill))
+                    using (var killer = new Process { StartInfo = taskkill })
                     {
-                        killer?.StandardOutput.ReadToEnd();
-                        killer?.WaitForExit(15000);
+                        // what it says is read as it comes and dropped, so the wait below is the only one
+                        killer.OutputDataReceived += (_, __) => { };
+                        killer.ErrorDataReceived += (_, __) => { };
+                        killer.Start();
+                        killer.BeginOutputReadLine();
+                        killer.BeginErrorReadLine();
+                        killer.WaitForExit(15000);
                     }
                     if (!process.HasExited) process.Kill();
                 }
@@ -412,9 +511,10 @@ namespace ClaudeCliProtocol
                 }
 #endif
             }
-            catch (Exception e) when (e is InvalidOperationException || e is System.ComponentModel.Win32Exception || e is NotSupportedException)
+            catch (Exception e) when (e is InvalidOperationException || e is System.ComponentModel.Win32Exception
+                || e is NotSupportedException || e is AggregateException)
             {
-                // it ended on its own in the meantime
+                // it ended on its own in the meantime, or a process of the tree could not be ended
             }
         }
     }
