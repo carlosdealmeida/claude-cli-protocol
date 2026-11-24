@@ -70,6 +70,31 @@ namespace ClaudeCliProtocol.Tests
         }
 
         [Fact]
+        public async Task Start_does_not_wait_for_a_claude_that_talks_before_it_listens()
+        {
+            // a claude that writes a lot as soon as it starts, before it reads its stdin: Start must come back,
+            // and the initialize must still be the first line written
+            var script = FakeClaudeHost.Script(Enumerable.Range(0, 400).Select(n => "{\"n\":" + n + ",\"pad\":\"" + new string('x', 200) + "\"}").ToArray());
+            var transport = new ProcessTransport(Options(("FAKE_CLAUDE_SCRIPT", script)) with { SendInitialize = true });
+            try
+            {
+                var start = Task.Run(() => transport.Start());
+                Assert.True(await Task.WhenAny(start, Task.Delay(TimeSpan.FromSeconds(30))) == start, "Start did not come back.");
+                await start;
+                await transport.SendAsync(new SendUserMessage("hello"), CancellationToken.None);
+
+                Assert.Equal("fake_start", (await Next(transport)).GetProperty("type").GetString());
+                for (var i = 0; i < 400; i++) Assert.Equal(i, (await Next(transport)).GetProperty("n").GetInt32());
+                Assert.Equal("initialize", J(await Written(transport)).GetProperty("request").GetProperty("subtype").GetString());
+                Assert.Equal("user", J(await Written(transport)).GetProperty("type").GetString());
+            }
+            finally
+            {
+                await transport.DisposeAsync();
+            }
+        }
+
+        [Fact]
         public async Task A_user_message_is_written_as_the_writer_writes_it()
         {
             await using var transport = await Started();

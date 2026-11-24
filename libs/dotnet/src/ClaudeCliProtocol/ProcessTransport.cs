@@ -124,13 +124,17 @@ namespace ClaudeCliProtocol
             }
             StateChanged?.Invoke(this, TransportState.Open);
 
-            // before anything else can be written: the handshake the official SDKs send first
-            if (_options.SendInitialize)
-                SendRawAsync(StdinWriter.Write(new Initialize { RequestId = NewRequestId() })).GetAwaiter().GetResult();
+            // The handshake the official SDKs send first. The write lock is taken here, so nothing else can be
+            // written before it; the write itself is not waited for. A claude that writes before it reads its
+            // stdin must not hold Start, and its stdout has to be read from the first moment.
+            var handshake = _options.SendInitialize ? StdinWriter.Write(new Initialize { RequestId = NewRequestId() }) : null;
+            if (handshake != null) _writing.Wait();
 
             _stdoutReader = Task.Run(() => ReadStdout(process));
             _stderrReader = Task.Run(() => ReadStderr(process));
             _ = Task.Run(() => WatchAsync(process));
+
+            if (handshake != null) _ = Task.Run(() => WriteHeldAsync(handshake));
         }
 
         /// <summary>The next line of the claude's stdout, or null once the claude has ended. Blank lines are skipped.</summary>
@@ -187,8 +191,14 @@ namespace ClaudeCliProtocol
         /// <summary>One line to the claude's stdin, as ASCII bytes and a line feed. False when the process has ended.</summary>
         internal async Task<bool> SendRawAsync(string line)
         {
-            var bytes = Encoding.ASCII.GetBytes(line + "\n");
             await _writing.WaitAsync().ConfigureAwait(false);
+            return await WriteHeldAsync(line).ConfigureAwait(false);
+        }
+
+        /// <summary>Writes one line with the write lock already held, and releases the lock.</summary>
+        private async Task<bool> WriteHeldAsync(string line)
+        {
+            var bytes = Encoding.ASCII.GetBytes(line + "\n");
             try
             {
                 Stream? stdin;
