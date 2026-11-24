@@ -1,7 +1,10 @@
 name: Re-record fixtures
 
-# Records the scenarios again with the real `claude -p`, once a week, and opens a pull request when a
-# recording changes: a change in the CLI shows up here before anyone finds it in use.
+# Records the scenarios again with the real `claude -p`, once a week, and opens a pull request with the
+# new recordings for a person to read: a change in the CLI shows up here before anyone finds it in use.
+#
+# Two jobs, on purpose. The first runs the real claude, which runs tools: it has no token that can write
+# to the repository. The second opens the pull request and runs no claude.
 
 on:
   schedule:
@@ -13,12 +16,14 @@ permissions:
 
 jobs:
   record:
-    name: Record and open a pull request
+    name: Record
     # the recorder replaces Windows paths (folder, home, user) with the demo ones
     runs-on: windows-latest
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
+    outputs:
+      recorded: ${{ steps.guard.outputs.run }}
+      version: ${{ steps.record.outputs.version }}
     env:
       # only whether the key exists; the key itself goes to the recording step alone
       HAS_API_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
@@ -27,6 +32,8 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       # Without the secret (or without the recorder), the job says so and ends without an error.
       - name: Is there a recorder and a key?
@@ -58,11 +65,17 @@ jobs:
           npm install -g @anthropic-ai/claude-code
           claude --version
 
-      - name: Record every scenario
+      # Only the scenarios that already have a recording. A scenario of tools/cenarios.json that was never
+      # recorded enters by hand, together with its name in the tests.
+      - name: Record the scenarios that have a recording
+        id: record
         if: steps.guard.outputs.run == 'true'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: python -I tools/gravar.py --todos --saida fixtures
+        run: |
+          scenarios=$(ls fixtures/*.stream.ndjson | xargs -n1 basename | sed 's/\.stream\.ndjson$//')
+          python -I tools/gravar.py $scenarios --saida fixtures
+          echo "version=$(claude --version)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-dotnet@v6
         if: steps.guard.outputs.run == 'true'
@@ -71,9 +84,11 @@ jobs:
             6.0.x
             8.0.x
 
-      # The expected results go with the recordings. The library writes them again (those tests fail on
-      # purpose while they write), then the conformance and the privacy tests must pass on the new files:
-      # a recording with private data in it never reaches a pull request.
+      # The expected results go with the recordings: the library writes them again (those tests fail on
+      # purpose while they write). They are the library's own reading of the new recordings, so the
+      # conformance tests that follow say only that the files are whole; whether the reading is still
+      # right is for whoever reads the pull request. The privacy tests look for a user folder other than
+      # the demo one, a credential and an e-mail address; they do not understand the conversation.
       - name: Write the expected results again and check the recordings
         if: steps.guard.outputs.run == 'true'
         run: |
@@ -82,24 +97,53 @@ jobs:
           dotnet build libs/dotnet -c Release
           dotnet test libs/dotnet -c Release --no-build --framework net6.0 --filter "FullyQualifiedName~ConformanceTests|FullyQualifiedName~FixturePrivacyTests"
 
-      # A pull request opened with GITHUB_TOKEN does not start other workflows: run the CI on it by hand
-      # (close and reopen it, or push an empty commit) before merging.
-      - name: Open a pull request when a recording changed
+      - uses: actions/upload-artifact@v7
         if: steps.guard.outputs.run == 'true'
+        with:
+          name: fixtures
+          path: |
+            fixtures/*.ndjson
+            fixtures/*.jsonl
+            fixtures/*.json
+          if-no-files-found: error
+          retention-days: 7
+
+  open-pr:
+    name: Open a pull request
+    needs: record
+    if: needs.record.outputs.recorded == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: fixtures
+          path: fixtures
+
+      # The ids of the session and of each message change in every recording, so there is something to
+      # show every week. A pull request opened with GITHUB_TOKEN does not start other workflows: run the
+      # CI on it by hand (close and reopen it, or push an empty commit) before merging.
+      - name: Open a pull request with the new recordings
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CLAUDE_VERSION: ${{ needs.record.outputs.version }}
         run: |
           if [ -z "$(git status --porcelain fixtures)" ]; then
             echo "::notice::No recording changed."
             exit 0
           fi
-          branch="fixtures/$(date -u +%Y-%m-%d)"
+          today="$(date -u +%Y-%m-%d)"
+          branch="fixtures/$today"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "$branch"
           git add fixtures
-          git commit -m "test(fixtures): regravação de $(date -u +%Y-%m-%d) com $(claude --version)"
+          git commit -m "test(fixtures): regravação de $today com $CLAUDE_VERSION"
           git push -u origin "$branch"
           gh pr create --base master --head "$branch" \
-            --title "Fixtures regravadas em $(date -u +%Y-%m-%d)" \
-            --body "As gravações mudaram na regravação semanal, feita com $(claude --version). Leia o diff: uma mudança aqui é uma mudança do CLI."
+            --title "Fixtures regravadas em $today" \
+            --body "Gravações refeitas na regravação semanal, com $CLAUDE_VERSION. Os ids de sessão e de mensagem mudam a cada gravação; o que importa no diff é a forma das linhas e os resultados esperados. Os esperados foram reescritos pela própria lib: um evento que sumiu deles é uma linha que a lib deixou de reconhecer. Leia o diff e rode o CI antes de juntar."
