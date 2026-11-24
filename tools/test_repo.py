@@ -81,11 +81,16 @@ def load_yaml(rel):
 
 
 class ReleaseDocs(unittest.TestCase):
-    def test_changelog_follows_keep_a_changelog_and_has_nothing_released(self):
+    def test_changelog_follows_keep_a_changelog_and_its_newest_version_is_the_package_version(self):
+        # the release workflow checks the tag against the package Version; the changelog must tell the same
         text = read("CHANGELOG.md")
         self.assertIn("https://keepachangelog.com/en/1.1.0/", text)
         self.assertIn("## [Unreleased]", text)
-        self.assertNotRegex(text, r"## \[\d+\.\d+\.\d+\]")
+        released = re.findall(r"^## \[(\d+\.\d+\.\d+)\] - \d{4}-\d{2}-\d{2}$", text, re.MULTILINE)
+        version = re.search(r"<Version>([^<]+)</Version>", read("libs/dotnet/src/ClaudeCliProtocol/ClaudeCliProtocol.csproj")).group(1)
+        self.assertTrue(released, "no released version in the changelog")
+        self.assertEqual(version, released[0])
+        self.assertLess(text.index("## [Unreleased]"), text.index("## [" + released[0] + "]"))
 
     def test_issue_templates(self):
         config = load_yaml(".github/ISSUE_TEMPLATE/config.yml")

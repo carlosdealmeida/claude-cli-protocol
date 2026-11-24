@@ -19,8 +19,8 @@ that speak it, first in .NET and then in Delphi.
 -p` of this machine: events, the two parsers, commands, session, replay of recordings and
 `ProcessTransport`. It passes the 42 recordings of `fixtures/`, on both targets. The transport is
 tested with a make-believe `claude`; against a real `claude` (2.1.331, on Windows) it has run once,
-with one short message, in a test that runs only when asked. No package has been published and the
-site is not live yet.
+with one short message, in a test that runs only when asked. The site is live at
+<https://carlosdealmeida.github.io/claude-cli-protocol/en/>. No package has been published yet.
 
 ## What is in here
 

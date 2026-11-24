@@ -7,10 +7,10 @@ for .NET: typed events, commands, a session and swappable transports. No UI and 
 
 ## Status
 
-**No release yet.** As of 2026-11-24 the library reads and writes the protocol, starts the `claude
--p` of the machine (`ProcessTransport`) and passes the 42 recordings of the repository, on both
-targets. The transport is tested against a make-believe `claude`; against a real one (2.1.331, on
-Windows) it has run once, with one short message, in a test that runs only when asked. Follow the
+**Version 0.1.0 is the first release.** The library reads and writes the protocol, starts the
+`claude -p` of the machine (`ProcessTransport`) and passes the 42 recordings of the repository, on
+both targets. The transport is tested against a make-believe `claude`; against a real one (2.1.331,
+on Windows) it has run once, with one short message, in a test that runs only when asked. Follow the
 [roadmap](https://github.com/carlosdealmeida/claude-cli-protocol/blob/master/README.en.md#roadmap).
 
 ## What is in it

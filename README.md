@@ -19,7 +19,8 @@ primeiro em .NET e depois em Delphi.
 eventos, os dois parsers, comandos, sessão, replay de gravações e o `ProcessTransport`. Ela passa
 nas 42 gravações de `fixtures/`, nos dois targets. O transporte é testado com um `claude` de
 mentira; contra um `claude` de verdade (2.1.331, no Windows) ele rodou uma vez, com uma mensagem
-curta, num teste que só roda a pedido. Nenhum pacote foi publicado e o site ainda não está no ar.
+curta, num teste que só roda a pedido. O site está no ar em
+<https://carlosdealmeida.github.io/claude-cli-protocol/>. Nenhum pacote foi publicado ainda.
 
 ## O que tem aqui
 
