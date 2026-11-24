@@ -527,6 +527,100 @@ namespace ClaudeCliProtocol.Tests
             await Assert.ThrowsAsync<ArgumentNullException>(() => session.SendAsync(null!));
         }
 
+        [Fact]
+        public async Task A_read_that_throws_leaves_the_session_closed_and_idle()
+        {
+            var transport = new ScriptedTransport();
+            await using var session = new ClaudeSession(transport);
+            await session.SendAsync(new SendUserMessage("hi"));
+            transport.Enqueue(CanUseTool("req_1", "toolu_1"));
+            var seen = 0;
+
+            var failure = await Assert.ThrowsAsync<IOException>(async () =>
+            {
+                await foreach (var _ in session.ReadEventsAsync())
+                {
+                    seen++;
+                    transport.FailNextReceive = true; // the pipe breaks on the next read
+                }
+            });
+
+            Assert.Equal("The pipe is broken.", failure.Message); // what the transport threw goes up as it is
+            Assert.Equal(1, seen);
+            Assert.False(session.IsBusy);
+            Assert.Empty(session.PendingPermissions);
+            Assert.Equal(TransportState.Closed, session.TransportState);
+        }
+
+        [Fact]
+        public async Task A_cancelled_read_keeps_the_state_as_it_was()
+        {
+            var transport = new ScriptedTransport();
+            await using var session = new ClaudeSession(transport);
+            await session.SendAsync(new SendUserMessage("hi"));
+            using var cancelled = new System.Threading.CancellationTokenSource();
+            cancelled.Cancel();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            {
+                await foreach (var _ in session.ReadEventsAsync(cancelled.Token))
+                {
+                }
+            });
+
+            Assert.True(session.IsBusy); // a cancelled read says nothing about the claude
+            Assert.Equal(TransportState.Open, session.TransportState);
+        }
+
+        [Fact]
+        public async Task A_command_after_the_transport_closed_is_not_sent_and_does_not_make_the_session_busy()
+        {
+            var transport = new ScriptedTransport();
+            await using var session = new ClaudeSession(transport);
+            transport.Close();
+            await Drain(session);
+
+            Assert.False(await session.SendAsync(new SendUserMessage("too late")));
+            Assert.False(await session.SendAsync(new Interrupt()));
+
+            Assert.False(session.IsBusy);
+            Assert.Empty(transport.Sent);
+        }
+
+        [Fact]
+        public async Task A_message_after_a_recording_ended_does_not_make_the_session_busy()
+        {
+            await using var session = new ClaudeSession(new ReplayTransport(FixtureFiles.StreamLines("edit")));
+            await Drain(session);
+
+            Assert.False(await session.SendAsync(new SendUserMessage("anyone there?")));
+
+            Assert.False(session.IsBusy);
+        }
+
+        [Fact]
+        public async Task A_subscriber_that_throws_stops_neither_the_send_nor_the_reading()
+        {
+            var transport = new ScriptedTransport();
+            await using var session = new ClaudeSession(transport);
+            var raised = 0;
+            session.StateChanged += (_, _) =>
+            {
+                raised++;
+                throw new InvalidOperationException("a subscriber with a bug");
+            };
+
+            Assert.True(await session.SendAsync(new SendUserMessage("hi")));
+            transport.Enqueue(CanUseTool("req_1", "toolu_1"));
+            transport.Enqueue(Result);
+            transport.Close();
+            var events = await Drain(session);
+
+            Assert.IsType<SendUserMessage>(Assert.Single(transport.Sent)); // the message went
+            Assert.IsType<TurnCompleted>(events.Last());                   // and the events kept coming
+            Assert.True(raised >= 3);
+        }
+
         // ---------------------------------------------------------------- recordings
 
         public static IEnumerable<object[]> Scenarios => FixtureFiles.Scenarios.Select(s => new object[] { s });

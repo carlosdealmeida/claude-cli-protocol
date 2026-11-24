@@ -96,13 +96,17 @@ namespace ClaudeCliProtocol
             }
         }
 
-        /// <summary>Raised after any of the properties changed. It may come from the reading thread or from a sender's.</summary>
+        /// <summary>
+        /// Raised after any of the properties changed. It may come from the reading thread or from a sender's. An
+        /// exception a subscriber throws is dropped.
+        /// </summary>
         public event EventHandler? StateChanged;
 
         /// <summary>
         /// The events of the session, until the transport closes. A line the parser does not understand gives no
-        /// event and does not stop the reading. When the transport closes, the session is idle, with nothing pending.
-        /// Call it once.
+        /// event and does not stop the reading. When the transport closes, or throws while it is read, the session is
+        /// idle, with nothing pending, and stays so: a command sent after that is not sent. A cancelled read leaves the
+        /// state as it was. Call it once: a read that ended, for any reason, is not started again.
         /// </summary>
         public async IAsyncEnumerable<ClaudeEvent> ReadEventsAsync([EnumeratorCancellation] CancellationToken ct = default)
         {
@@ -114,15 +118,25 @@ namespace ClaudeCliProtocol
 
             while (true)
             {
-                var line = await _transport.ReceiveLineAsync(ct).ConfigureAwait(false);
+                string? line;
+                try
+                {
+                    line = await _transport.ReceiveLineAsync(ct).ConfigureAwait(false);
+                }
+                catch (Exception e) when (!(e is OperationCanceledException))
+                {
+                    // a transport that broke is a transport that closed; what it threw still goes up
+                    if (Closed()) Raise();
+                    throw;
+                }
                 if (line == null)
                 {
-                    if (Closed()) StateChanged?.Invoke(this, EventArgs.Empty);
+                    if (Closed()) Raise();
                     yield break;
                 }
                 foreach (var e in _parser.Parse(line))
                 {
-                    if (Apply(e, out var replied)) StateChanged?.Invoke(this, EventArgs.Empty);
+                    if (Apply(e, out var replied)) Raise();
                     yield return e;
                     if (replied != null) yield return replied;
                 }
@@ -133,20 +147,24 @@ namespace ClaudeCliProtocol
         /// Sends a command. A message makes the session busy. A control command gets a new request id, and its reply
         /// comes back as a <see cref="ControlReplied"/>. An answer to a permission request goes only when the request
         /// is pending, and takes it out: false, and nothing sent, for a request already answered, cancelled, resolved
-        /// or unknown. True means the command was handed to the transport, not that the claude took it. What the
+        /// or unknown. Nothing is sent, and the answer is false, once the transport has closed. True means the
+        /// command was handed to the transport, not that the claude took it. What the
         /// transport throws is thrown here; an answer the transport failed to deliver stays taken out, because nobody
         /// knows whether the claude got it, and after that only an <see cref="Interrupt"/> frees the claude.
         /// </summary>
         public async Task<bool> SendAsync(ClaudeCommand command, CancellationToken ct = default)
         {
+            if (command == null) throw new ArgumentNullException(nameof(command));
+            lock (_gate)
+            {
+                if (_transportState == TransportState.Closed) return false; // nobody is there to read it
+            }
+
             switch (command)
             {
-                case null:
-                    throw new ArgumentNullException(nameof(command));
-
                 case AnswerPermission answer:
                     if (!_ledger.TryTake(answer.RequestId, out _)) return false;
-                    StateChanged?.Invoke(this, EventArgs.Empty);
+                    Raise();
                     await _transport.SendAsync(answer, ct).ConfigureAwait(false);
                     return true;
 
@@ -176,7 +194,7 @@ namespace ClaudeCliProtocol
                             wasIdle = !_busy;
                             _busy = true;
                         }
-                        if (wasIdle) StateChanged?.Invoke(this, EventArgs.Empty);
+                        if (wasIdle) Raise();
                         try
                         {
                             await _transport.SendAsync(message, ct).ConfigureAwait(false);
@@ -187,7 +205,7 @@ namespace ClaudeCliProtocol
                             if (wasIdle)
                             {
                                 lock (_gate) _busy = false;
-                                StateChanged?.Invoke(this, EventArgs.Empty);
+                                Raise();
                             }
                             throw;
                         }
@@ -268,6 +286,26 @@ namespace ClaudeCliProtocol
             }
         }
 
+        /// <summary>
+        /// Tells the subscribers, one by one. What a subscriber throws is dropped: it must stop neither a command
+        /// on its way to the claude nor the reading of the claude's lines.
+        /// </summary>
+        private void Raise()
+        {
+            var handlers = StateChanged;
+            if (handlers == null) return;
+            foreach (var handler in handlers.GetInvocationList())
+            {
+                try
+                {
+                    ((EventHandler)handler)(this, EventArgs.Empty);
+                }
+                catch (Exception)
+                {
+                }
+            }
+        }
+
         private void OnTransportStateChanged(object? sender, TransportState state)
         {
             lock (_gate)
@@ -275,7 +313,7 @@ namespace ClaudeCliProtocol
                 if (_transportState == state) return;
                 _transportState = state;
             }
-            StateChanged?.Invoke(this, EventArgs.Empty);
+            Raise();
         }
     }
 }
