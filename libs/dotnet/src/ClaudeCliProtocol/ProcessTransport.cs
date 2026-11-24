@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,6 +16,12 @@ namespace ClaudeCliProtocol
     /// arguments (<see cref="ClaudeArguments"/>), gives the lines of its stdout and writes the commands to its stdin.
     /// The stderr is read and dropped, because it may hold text of the conversation; reading it is needed, or the
     /// pipe fills and the claude stops. Nothing is written to disk.
+    /// <para>
+    /// This is where the permission answer rule is kept. The transport has a <see cref="PermissionLedger"/> of its
+    /// own, fed only with the lines it read itself from the claude's stdout, and an <see cref="AnswerPermission"/>
+    /// is written from the request that ledger holds: the tool's input and the permission suggestions are always the
+    /// ones the claude sent, and a request is answered once.
+    /// </para>
     /// </summary>
     public sealed class ProcessTransport : IClaudeTransport
     {
@@ -24,6 +31,8 @@ namespace ClaudeCliProtocol
         private readonly ConcurrentQueue<string> _lines = new ConcurrentQueue<string>();
         private readonly SemaphoreSlim _available = new SemaphoreSlim(0);
         private readonly SemaphoreSlim _writing = new SemaphoreSlim(1, 1);
+        private readonly StreamJsonParser _parser = new StreamJsonParser();
+        private readonly PermissionLedger _ledger = new PermissionLedger();
         private readonly TaskCompletionSource<bool> _ended =
             new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         private Process? _process;
@@ -115,6 +124,10 @@ namespace ClaudeCliProtocol
             }
             StateChanged?.Invoke(this, TransportState.Open);
 
+            // before anything else can be written: the handshake the official SDKs send first
+            if (_options.SendInitialize)
+                SendRawAsync(StdinWriter.Write(new Initialize { RequestId = NewRequestId() })).GetAwaiter().GetResult();
+
             _stdoutReader = Task.Run(() => ReadStdout(process));
             _stderrReader = Task.Run(() => ReadStderr(process));
             _ = Task.Run(() => WatchAsync(process));
@@ -136,8 +149,40 @@ namespace ClaudeCliProtocol
             }
         }
 
-        /// <summary>Written in the next task.</summary>
-        public Task SendAsync(ClaudeCommand command, CancellationToken ct) => Task.CompletedTask;
+        /// <summary>
+        /// Writes a command to the claude's stdin, one whole line at a time. A control command with no request id
+        /// gets one. An answer to a permission request is written from the request this transport read from the
+        /// claude; when that request is not pending here (already answered, cancelled, resolved or never seen),
+        /// nothing is written. After the claude has ended, nothing is written and nothing is thrown.
+        /// </summary>
+        public async Task SendAsync(ClaudeCommand command, CancellationToken ct)
+        {
+            if (command == null) throw new ArgumentNullException(nameof(command));
+            lock (_gate)
+            {
+                if (!_started && !_disposed) throw new InvalidOperationException("The transport was not started.");
+            }
+            ct.ThrowIfCancellationRequested();
+
+            string? line;
+            switch (command)
+            {
+                case SendUserMessage message:
+                    line = StdinWriter.Write(message);
+                    break;
+                case ControlCommand control:
+                    line = StdinWriter.Write(control.RequestId == null ? control with { RequestId = NewRequestId() } : control);
+                    break;
+                case AnswerPermission answer:
+                    line = _ledger.TryTake(answer.RequestId, out var request) ? StdinWriter.Write(answer, request!) : null;
+                    break;
+                default:
+                    throw new NotSupportedException("This transport cannot write a " + command.GetType().Name + ".");
+            }
+            if (line != null) await SendRawAsync(line).ConfigureAwait(false);
+        }
+
+        private static string NewRequestId() => Guid.NewGuid().ToString("N");
 
         /// <summary>One line to the claude's stdin, as ASCII bytes and a line feed. False when the process has ended.</summary>
         internal async Task<bool> SendRawAsync(string line)
@@ -194,6 +239,7 @@ namespace ClaudeCliProtocol
                 {
                     line = line.TrimEnd('\r');
                     if (line.Trim().Length == 0) continue;
+                    Observe(line);
                     _lines.Enqueue(line);
                     _available.Release();
                 }
@@ -201,6 +247,47 @@ namespace ClaudeCliProtocol
             catch (Exception e) when (e is IOException || e is ObjectDisposedException || e is InvalidOperationException)
             {
                 // the pipe went away with the process
+            }
+        }
+
+        /// <summary>
+        /// What the transport itself takes from a line, before handing it out: the permission requests go to the
+        /// ledger, and a control request this transport does not serve is answered with an error.
+        /// </summary>
+        private void Observe(string line)
+        {
+            foreach (var e in _parser.Parse(line)) _ledger.Observe(e);
+
+            if (line.IndexOf("control_request", StringComparison.Ordinal) < 0) return;
+            var unserved = UnservedControlRequest(line);
+            // a hook, an MCP message, an elicitation...: without an answer the claude would wait for ever.
+            // Not awaited here: the write may wait on the pipe, and this thread is the one that keeps stdout moving.
+            if (unserved != null) _ = SendRawAsync(StdinWriter.WriteControlError(unserved, "not supported"));
+        }
+
+        /// <summary>The request id of a control request that is not a permission request; null for any other line.</summary>
+        private static string? UnservedControlRequest(string line)
+        {
+            try
+            {
+                using (var doc = JsonDocument.Parse(line))
+                {
+                    var root = doc.RootElement;
+                    if (root.ValueKind != JsonValueKind.Object
+                        || !root.TryGetProperty("type", out var type) || type.ValueKind != JsonValueKind.String
+                        || type.GetString() != "control_request"
+                        || !root.TryGetProperty("request_id", out var id) || id.ValueKind != JsonValueKind.String
+                        || string.IsNullOrEmpty(id.GetString()))
+                        return null;
+                    var isPermission = root.TryGetProperty("request", out var request) && request.ValueKind == JsonValueKind.Object
+                        && request.TryGetProperty("subtype", out var subtype) && subtype.ValueKind == JsonValueKind.String
+                        && subtype.GetString() == "can_use_tool";
+                    return isPermission ? null : id.GetString();
+                }
+            }
+            catch (JsonException)
+            {
+                return null;
             }
         }
 

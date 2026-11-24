@@ -160,6 +160,20 @@ namespace ClaudeCliProtocol
             });
         }
 
+        /// <summary>The answer to a control request the writer of stdin does not serve: an error with its reason.</summary>
+        internal static string WriteControlError(string requestId, string error)
+        {
+            return Line(w =>
+            {
+                w.WriteString("type", "control_response");
+                w.WriteStartObject("response");
+                w.WriteString("subtype", "error");
+                w.WriteString("request_id", requestId);
+                w.WriteString("error", error);
+                w.WriteEndObject();
+            });
+        }
+
         private static string Line(Action<Utf8JsonWriter> body)
         {
             using (var stream = new MemoryStream())
