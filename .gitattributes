@@ -17,3 +17,9 @@
 *.dproj text eol=crlf
 *.dfm text eol=crlf
 *.inc text eol=crlf
+
+# Linguagem do repositório no GitHub: o que conta é a lib, não o ferramental.
+# Sem isto os scripts Python de docs/ e tools/ fazem o repo aparecer como Python.
+docs/** linguist-documentation
+site/** linguist-documentation
+tools/** linguist-vendored
