@@ -15,11 +15,11 @@ that speak it, first in .NET and then in Delphi.
 
 ## Status
 
-**Phase 0, as of 2026-11-22.** The repository has its structure, the documentation in five
-languages, CI and the skeleton of the site. The .NET library is still empty: the code arrives in
-phase 1, from the `Protocol/` folder of
-[Claude Visual Chat](https://github.com/carlosdealmeida/claude-visual-chat). No package has been
-published and the site is not live yet.
+**Phase 1, as of 2026-11-23.** The .NET library reads and writes the protocol: events, the two
+parsers, commands, session and replay of recordings. The code came from the `Protocol/` folder of
+[Claude Visual Chat](https://github.com/carlosdealmeida/claude-visual-chat) and passes the 42
+recordings of `fixtures/`, on both targets. It does not start `claude` by itself yet: that transport
+is phase 2. No package has been published and the site is not live yet.
 
 ## What is in here
 
@@ -62,8 +62,10 @@ commands into lines.
 ## Security
 
 The answer to a permission request always carries the `input` and the `permission_suggestions` the
-process side received from `claude` itself. The caller only chooses the request, the decision and
-the message, and has no way to change what the tool will run.
+process side received from `claude` itself. Whoever sends the command only chooses the request, the
+decision and the message: the answer command has no field for the `input`. Whoever writes to the
+stdin of `claude` builds the answer from the request it read itself, and each request is answered
+once.
 
 To report a flaw, see the [security policy](SECURITY.en.md).
 

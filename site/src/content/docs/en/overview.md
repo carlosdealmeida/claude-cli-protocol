@@ -14,8 +14,9 @@ Community project, not affiliated with or endorsed by Anthropic.
 
 ## Status
 
-**Phase 0, as of 2026-11-22.** The repository has its structure, the documentation, CI and this
-site. The .NET library is still empty, and no package has been published.
+**Phase 1, as of 2026-11-23.** The .NET library reads and writes the protocol and passes the 42
+recordings of the repository. It does not start `claude` by itself yet (phase 2), and no package has
+been published.
 
 ## The layers
 

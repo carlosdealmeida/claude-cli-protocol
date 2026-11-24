@@ -1,0 +1,13 @@
+{
+  "format": 1,
+  "events": [
+    {"line":1,"event":"user_block","fields":{"parent_tool_use_id":null,"block":{"kind":"text","text":"Use the Write tool to create .claude/settings.local.json containing {}. Be brief."},"tool_use_result":null,"is_meta":false,"is_compact_summary":false,"timestamp":"2026-11-20T17:02:44.286Z","images":[],"is_synthetic":false,"origin":null,"uuid":"94f272ea-193e-4015-b2ff-c2c14efdc2b7","is_queued_command":false}},
+    {"line":2,"event":"assistant_block","fields":{"message_id":"msg_011ChEYKMW2Ak5yrENHphEGS","parent_tool_use_id":null,"block":{"kind":"tool_use","id":"toolu_01SUx8nq31zptNxnqjLSBXAp","name":"Write","input":{"file_path":"C:\\demo\\app\\.claude\\settings.local.json","content":"{}\n"}},"timestamp":"2026-11-20T17:02:45.968Z","thinking_duration_ms":null,"uuid":"1db90724-99d2-4032-8bd4-57cab86c9941","supersedes":[],"is_synthetic":false}},
+    {"line":2,"event":"prompt_cache_used","fields":{"ttl":3600000,"at":"2026-11-20T17:02:45.968Z"}},
+    {"line":3,"event":"user_block","fields":{"parent_tool_use_id":null,"block":{"kind":"tool_result","tool_use_id":"toolu_01SUx8nq31zptNxnqjLSBXAp","text":"Do not change the settings.","is_error":true,"non_execution_kind":"permission-rule","images":[]},"tool_use_result":"Error: Do not change the settings.","is_meta":false,"is_compact_summary":false,"timestamp":"2026-11-20T17:02:46.161Z","images":[],"is_synthetic":false,"origin":null,"uuid":"58aae744-a4f8-43bf-ac6e-fd4598d71d77","is_queued_command":false}},
+    {"line":4,"event":"assistant_block","fields":{"message_id":"msg_011ChEYKTWus8TCXwHE3MnWc","parent_tool_use_id":null,"block":{"kind":"thinking","text":""},"timestamp":"2026-11-20T17:02:47.994Z","thinking_duration_ms":3,"uuid":"47ec367c-9fbe-43b7-886b-07a18a87495f","supersedes":[],"is_synthetic":false}},
+    {"line":4,"event":"prompt_cache_used","fields":{"ttl":3600000,"at":"2026-11-20T17:02:47.994Z"}},
+    {"line":5,"event":"assistant_block","fields":{"message_id":"msg_011ChEYKTWus8TCXwHE3MnWc","parent_tool_use_id":null,"block":{"kind":"text","text":"I didn't create `.claude/settings.local.json`. The Write call was refused with \"Do not change the settings,\" so I haven't retried it. If you want the file created, approve the write and I'll run it again."},"timestamp":"2026-11-20T17:02:48.129Z","thinking_duration_ms":null,"uuid":"0e58a56d-a8d1-4446-a7f5-cd0fb8fc68a6","supersedes":[],"is_synthetic":false}},
+    {"line":5,"event":"prompt_cache_used","fields":{"ttl":3600000,"at":"2026-11-20T17:02:48.129Z"}}
+  ]
+}

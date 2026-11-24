@@ -15,10 +15,11 @@ primeiro em .NET e depois em Delphi.
 
 ## Estado
 
-**Fase 0, em 2026-11-22.** O repositório tem a estrutura, a documentação nos cinco idiomas, o CI e
-o esqueleto do site. A lib .NET ainda está vazia: o código chega na fase 1, vindo da pasta
-`Protocol/` do [Claude Visual Chat](https://github.com/carlosdealmeida/claude-visual-chat). Nenhum
-pacote foi publicado e o site ainda não está no ar.
+**Fase 1, em 2026-11-23.** A lib .NET lê e escreve o protocolo: eventos, os dois parsers, comandos,
+sessão e replay de gravações. O código veio da pasta `Protocol/` do [Claude Visual
+Chat](https://github.com/carlosdealmeida/claude-visual-chat) e passa nas 42 gravações de
+`fixtures/`, nos dois targets. Ela ainda não sobe o `claude` sozinha: esse transporte é a fase 2.
+Nenhum pacote foi publicado e o site ainda não está no ar.
 
 ## O que tem aqui
 
@@ -61,8 +62,9 @@ tipados e os comandos em linhas.
 ## Segurança
 
 A resposta a um pedido de permissão leva sempre o `input` e as `permission_suggestions` que o lado
-do processo recebeu do próprio `claude`. Quem chama só escolhe o pedido, a decisão e a mensagem,
-e não tem como trocar o que a ferramenta vai executar.
+do processo recebeu do próprio `claude`. Quem manda o comando só escolhe o pedido, a decisão e a
+mensagem: o comando de resposta não tem campo para o `input`. Quem escreve no stdin do `claude`
+monta a resposta com o pedido que ele mesmo leu, e cada pedido é respondido uma vez só.
 
 Para relatar uma falha, veja a [política de segurança](SECURITY.md).
 

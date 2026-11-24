@@ -252,6 +252,21 @@ class ReviewFindings(unittest.TestCase):
                          read("docs/i18n/glossary.md"))
         self.assertNotIn("Published on GitHub Pages", read("site/astro.config.mjs"))
 
+    def test_no_text_overstates_the_permission_rule(self):
+        # the rule binds whoever writes to the claude's stdin; the types alone do not stop that side from doing otherwise
+        self.assertIn("trusts the request it is given", read("libs/dotnet/README.md"))
+        for name, phrase in (("libs/dotnet/README.md", "has no way to change what the tool will run"),
+                             ("README.en.md", "has no way to change what the tool will run"),
+                             ("README.md", "não tem como trocar o que a ferramenta vai executar"),
+                             ("README.es.md", "no tiene forma de cambiar lo que la herramienta va a ejecutar"),
+                             ("README.zh-cn.md", "无法更改工具将要执行的内容"),
+                             ("README.zh-tw.md", "無法變更工具將要執行的內容")):
+            self.assertNotIn(phrase, " ".join(read(name).split()), name)
+
+    def test_contributing_does_not_say_the_privacy_test_is_still_to_come(self):
+        for name in ("CONTRIBUTING.md", "CONTRIBUTING.en.md", "CONTRIBUTING.es.md"):
+            self.assertIn("FixturePrivacyTests", read(name), name)
+
 
 if __name__ == "__main__":
     unittest.main()

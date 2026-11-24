@@ -14,8 +14,8 @@ Projeto da comunidade, sem vínculo com a Anthropic nem endosso dela.
 
 ## Estado
 
-**Fase 0, em 2026-11-22.** O repositório tem a estrutura, a documentação, o CI e este site. A lib
-.NET ainda está vazia, e nenhum pacote foi publicado.
+**Fase 1, em 2026-11-23.** A lib .NET lê e escreve o protocolo e passa nas 42 gravações do
+repositório. Ela ainda não sobe o `claude` sozinha (fase 2), e nenhum pacote foi publicado.
 
 ## As camadas
 

@@ -1,0 +1,14 @@
+{
+  "format": 1,
+  "events": [
+    {"line":1,"event":"user_block","fields":{"parent_tool_use_id":null,"block":{"kind":"text","text":"Run the shell command 'sleep 5 && echo done > done.txt' and then say done in one word."},"tool_use_result":null,"is_meta":false,"is_compact_summary":false,"timestamp":"2026-10-28T00:05:05.391Z","images":[],"is_synthetic":false,"origin":null,"uuid":"9f6ca206-296f-47db-b36d-fe46b81f543a","is_queued_command":false}},
+    {"line":2,"event":"assistant_block","fields":{"message_id":"msg_011CgTf7C6nCEn2RfaHhd1Fp","parent_tool_use_id":null,"block":{"kind":"tool_use","id":"toolu_0172zcXk7esSGaxpkQx9zm9Z","name":"Bash","input":{"command":"sleep 5 && echo done > done.txt","description":"Sleep 5 seconds then write done.txt"}},"timestamp":"2026-10-28T00:05:07.442Z","thinking_duration_ms":null,"uuid":"d7fd992c-4af3-48bb-9c21-ae5eae65a2f7","supersedes":[],"is_synthetic":false}},
+    {"line":2,"event":"prompt_cache_used","fields":{"ttl":3600000,"at":"2026-10-28T00:05:07.442Z"}},
+    {"line":3,"event":"user_block","fields":{"parent_tool_use_id":null,"block":{"kind":"tool_result","tool_use_id":"toolu_0172zcXk7esSGaxpkQx9zm9Z","text":"Shell cwd was reset to C:\\demo\\app","is_error":false,"non_execution_kind":null,"images":[]},"tool_use_result":{"stdout":"","stderr":"\nShell cwd was reset to C:\\demo\\app","interrupted":false,"isImage":false,"noOutputExpected":false},"is_meta":false,"is_compact_summary":false,"timestamp":"2026-10-28T00:05:14.931Z","images":[],"is_synthetic":false,"origin":null,"uuid":"99865fc8-b202-4119-ab44-d75b5b25d4f8","is_queued_command":false}},
+    {"line":4,"event":"user_block","fields":{"parent_tool_use_id":null,"block":{"kind":"text","text":"After that, say the word second in one line."},"tool_use_result":null,"is_meta":false,"is_compact_summary":false,"timestamp":"2026-10-28T00:05:05.185Z","images":[],"is_synthetic":false,"origin":null,"uuid":"fe2a6d01-4df1-48bf-9d72-48216221c22a","is_queued_command":true}},
+    {"line":5,"event":"assistant_block","fields":{"message_id":"msg_011CgTf7sMgUi9p2Q2MATvE7","parent_tool_use_id":null,"block":{"kind":"thinking","text":""},"timestamp":"2026-10-28T00:05:16.778Z","thinking_duration_ms":2,"uuid":"e4cfcb76-f286-4734-bc55-bf5e92eb9a34","supersedes":[],"is_synthetic":false}},
+    {"line":5,"event":"prompt_cache_used","fields":{"ttl":3600000,"at":"2026-10-28T00:05:16.778Z"}},
+    {"line":6,"event":"assistant_block","fields":{"message_id":"msg_011CgTf7sMgUi9p2Q2MATvE7","parent_tool_use_id":null,"block":{"kind":"text","text":"second"},"timestamp":"2026-10-28T00:05:16.781Z","thinking_duration_ms":null,"uuid":"74d357c6-7d39-44c7-9250-db72143c32c7","supersedes":[],"is_synthetic":false}},
+    {"line":6,"event":"prompt_cache_used","fields":{"ttl":3600000,"at":"2026-10-28T00:05:16.781Z"}}
+  ]
+}

@@ -16,9 +16,7 @@
 
 ## 狀態
 
-**第 0 階段，截至 2026-11-22。** 儲存庫已有目錄結構、五種語言的文件、CI 和網站骨架。.NET 程式庫目前還是空的：
-程式碼將在第 1 階段到來，來自 [Claude Visual Chat](https://github.com/carlosdealmeida/claude-visual-chat)
-的 `Protocol/` 資料夾。尚未發佈任何套件，網站也尚未上線。
+**第 1 階段，截至 2026-11-23。** .NET 程式庫已能讀寫該通訊協定：事件、兩個剖析器、命令、工作階段和錄製重播。程式碼來自 [Claude Visual Chat](https://github.com/carlosdealmeida/claude-visual-chat) 的 `Protocol/` 資料夾，並在兩個目標框架上通過了 `fixtures/` 中的 42 份錄製。它目前還不能自行啟動 `claude`：該傳輸層屬於第 2 階段。尚未發佈任何套件，網站也尚未上線。
 
 ## 這裡有什麼
 
@@ -57,8 +55,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose
 
 ## 安全性
 
-對權限請求的答覆一律帶有處理程序一側從 `claude` 本身收到的 `input` 和 `permission_suggestions`。
-呼叫端只能選擇請求、決定和訊息，無法變更工具將要執行的內容。
+對權限請求的答覆一律帶有處理程序一側從 `claude` 本身收到的 `input` 和 `permission_suggestions`。傳送命令的一方只能選擇請求、決定和訊息：答覆命令中沒有 `input` 欄位。向 `claude` 的 stdin 寫入的一方用它自己讀到的請求來建構答覆，每個請求只答覆一次。
 
 如需回報漏洞，請參閱[安全性原則](SECURITY.en.md)（英文）。
 

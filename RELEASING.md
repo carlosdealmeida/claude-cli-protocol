@@ -15,12 +15,20 @@ A lib Delphi entra no mesmo release como um zip, a partir da fase 6.
 ## Estado
 
 Em 2026-11-22: nenhum release saiu, e nenhuma das configurações de "Uma vez só" foi feita. O
-repositório no GitHub está privado e vazio. Este arquivo descreve o processo; ele ainda não rodou.
+repositório está público desde 2026-11-22, com o primeiro push no mesmo dia.
 
-Os quatro workflows (`ci.yml`, `release.yml`, `pages.yml` e `fixtures.yml`) foram escritos e
-conferidos como YAML pelo teste de estrutura. **Nenhum rodou no GitHub ainda.** No `fixtures.yml`,
-os passos que instalam o Claude Code, gravam e abrem o pull request só rodam a partir da fase 2,
-quando o gravador chegar; até lá o workflow avisa que não há gravador e termina sem erro.
+O que já rodou no GitHub, no primeiro push:
+
+- **`ci.yml`: passou.** Os três jobs (a lib .NET em Windows e Ubuntu, o site e a estrutura).
+- **`pages.yml`: o build passou e o deploy falhou**, porque o GitHub Pages ainda não está ligado
+  (veja "GitHub Pages" abaixo). O site não está no ar.
+
+O que nunca rodou:
+
+- **`release.yml`**: nenhuma tag foi criada.
+- **`fixtures.yml`**: no agendamento ele avisa que não há gravador e termina sem erro. Os passos
+  que instalam o Claude Code, gravam e abrem o pull request só rodam a partir da fase 2, quando o
+  gravador chegar.
 
 ## Fazer um release
 

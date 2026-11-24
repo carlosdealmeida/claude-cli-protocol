@@ -353,3 +353,22 @@ Achados na leitura do código, com a resposta do dono do projeto a cada um.
 7. **Branch padrão:** `master`, como no `claude-todos`.
 8. **Escopo da fase 1:** a fase 1 inteira da tabela: mover o `Protocol/`, comandos como dados,
    `ClaudeSession`, `ReplayTransport` e os testes contra as fixtures.
+
+## Decidido em 2026-11-23
+
+9. **"Ocupada" segue o stream, não a contagem de mensagens.** O supervisor de referência conta
+   turnos: cada mensagem enviada abre um e cada `result` fecha um. A gravação `queued` mostra que
+   essa conta não fecha: foram enviadas duas mensagens, a segunda enquanto a primeira rodava um
+   comando, o `claude` levou a segunda para dentro do mesmo turno e o stream tem um `system/init` e
+   um `result` só. Com a contagem, a sessão ficaria ocupada para sempre. Nas 21 gravações, os
+   `system/init` e os `result` se alternam, um para um. Por isso, na `ClaudeSession`, a sessão está
+   ocupada de uma mensagem enviada, ou de um `system/init`, até o próximo `result`. O custo: uma
+   mensagem que esperou a sua vez deixa a sessão livre por um instante, entre o `result` do turno
+   anterior e o `system/init` do dela. A resposta do interrupt (`still_queued`) continua chegando
+   ao app, mas a sessão não faz conta com ela.
+10. **Onde a regra da resposta de permissão é garantida.** O comando de resposta não tem campo para
+    o `input`, e a `ClaudeSession` só manda resposta de pedido pendente, uma vez. Quem monta a
+    linha é quem escreve no stdin do `claude`, com o pedido que tirou do `PermissionLedger`. O
+    `StdinWriter` confia no pedido que recebe: ele é uma peça para o lado do processo, e a lib não
+    tem como impedir que esse lado lhe passe outro pedido. O transporte que escreve no processo
+    (fase 2) é o ponto onde a regra se cumpre.
