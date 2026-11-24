@@ -15,6 +15,7 @@ namespace ClaudeCliProtocol.Tests
         private readonly Queue<string> _lines = new Queue<string>();
         private TaskCompletionSource<string?>? _waiter;
         private bool _closed;
+        private bool _reportedClosed;
 
         /// <summary>The commands received, in order.</summary>
         public List<ClaudeCommand> Sent { get; } = new List<ClaudeCommand>();
@@ -45,7 +46,11 @@ namespace ClaudeCliProtocol.Tests
             waiter?.SetResult(line);
         }
 
-        /// <summary>After the queued lines, the transport gives null.</summary>
+        /// <summary>
+        /// After the queued lines, the transport gives null. It reports Closed when that null is handed out. The
+        /// process transport reports it earlier, when the claude ends: a test that needs that order calls
+        /// <see cref="Raise"/> itself.
+        /// </summary>
         public void Close()
         {
             TaskCompletionSource<string?>? waiter;
@@ -56,7 +61,18 @@ namespace ClaudeCliProtocol.Tests
                 waiter = _waiter;
                 _waiter = null;
             }
-            waiter?.SetResult(null);
+            if (waiter == null) return;
+            ReportClosed();
+            waiter.SetResult(null);
+        }
+
+        private void ReportClosed()
+        {
+            lock (_gate)
+            {
+                if (_reportedClosed) return;
+                _reportedClosed = true;
+            }
             StateChanged?.Invoke(this, TransportState.Closed);
         }
 
@@ -77,16 +93,28 @@ namespace ClaudeCliProtocol.Tests
                 throw new TimeoutException("The reader did not come back for the next line.");
         }
 
+        /// <summary>Makes the next <see cref="ReceiveLineAsync"/> throw, as a pipe that broke would.</summary>
+        public bool FailNextReceive { get; set; }
+
         public Task<string?> ReceiveLineAsync(CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
+            if (FailNextReceive)
+            {
+                FailNextReceive = false;
+                throw new IOException("The pipe is broken.");
+            }
             lock (_gate)
             {
                 if (_lines.Count > 0) return Task.FromResult<string?>(_lines.Dequeue());
-                if (_closed) return Task.FromResult<string?>(null);
-                _waiter = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
-                return _waiter.Task;
+                if (!_closed)
+                {
+                    _waiter = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    return _waiter.Task;
+                }
             }
+            ReportClosed();
+            return Task.FromResult<string?>(null);
         }
 
         public Task SendAsync(ClaudeCommand command, CancellationToken ct)

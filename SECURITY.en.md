@@ -47,8 +47,8 @@ scope, among others:
 - **Personal data in a recording.** The user name, a folder, the e-mail or a credential of whoever
   recorded it, inside a file of `fixtures/`.
 
-The library arrives in phases, and part of the above has not been written yet. The scope covers
-what exists and what arrives.
+The .NET library already starts the process and keeps the permission answer rule in
+`ProcessTransport`. The Delphi library does not exist yet; the scope covers it too when it arrives.
 
 Out of scope: flaws in Claude Code itself (report them to Anthropic) and vulnerabilities in
 development dependencies that are not part of the published package.

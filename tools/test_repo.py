@@ -221,8 +221,40 @@ class Workflows(unittest.TestCase):
     def test_ci_runs_what_the_docs_tell_a_contributor_to_run(self):
         ci = read(".github/workflows/ci.yml")
         for command in ("dotnet build libs/dotnet -c Release", "dotnet test libs/dotnet -c Release --no-build",
-                        "tools/check_package.py", "tools/test_repo.py", "npm run build", "npm run check"):
+                        "tools/check_package.py", "tools/test_repo.py", "tools/test_gravar.py",
+                        "docs/test_sweep_issues.py", "npm run build", "npm run check"):
             self.assertIn(command, ci)
+
+    def test_the_fixtures_workflow_records_and_writes_the_expected_results_too(self):
+        # a pull request with new recordings and old expected files would only fail the conformance tests
+        text = read(".github/workflows/fixtures.yml")
+        for needed in ("tools/gravar.py $scenarios --saida fixtures", "CCP_UPDATE_EXPECTED", "ConformanceTests",
+                       "FixturePrivacyTests", "claude --version", "git add fixtures"):
+            self.assertIn(needed, text)
+
+    def test_the_fixtures_workflow_records_only_the_scenarios_that_have_a_recording(self):
+        # --todos would also record a scenario that is in no test: its files would fail the check every week
+        text = read(".github/workflows/fixtures.yml")
+        self.assertNotIn("--todos", text)
+        self.assertIn("ls fixtures/*.stream.ndjson", text)
+
+    def test_the_job_that_runs_the_claude_cannot_write_to_the_repository(self):
+        # the real claude runs tools there: no write token, and no credentials left behind by the checkout
+        doc = load_yaml(".github/workflows/fixtures.yml")
+        recording = 0
+        for name, job in doc["jobs"].items():
+            steps = job.get("steps", [])
+            runs_claude = any("gravar.py" in step.get("run", "") or "claude-code" in step.get("run", "") for step in steps)
+            permissions = job.get("permissions", doc.get("permissions", {}))
+            if not runs_claude:
+                self.assertNotIn("ANTHROPIC_API_KEY", str(job), name)
+                continue
+            recording += 1
+            self.assertNotIn("write", list(permissions.values()), name)
+            for step in steps:
+                if step.get("uses", "").startswith("actions/checkout@"):
+                    self.assertIs(step.get("with", {}).get("persist-credentials"), False, name)
+        self.assertEqual(1, recording)
 
 
 class ReviewFindings(unittest.TestCase):

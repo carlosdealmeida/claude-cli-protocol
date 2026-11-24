@@ -26,6 +26,14 @@ namespace ClaudeCliProtocol.Tests
         private static readonly Regex OtherUserFolder =
             new Regex(@"(users[\\/-]+|home[\\/]+)(?!demo\b)\w", RegexOptions.IgnoreCase);
 
+        /// <summary>What a credential looks like: an Anthropic key or a GitHub token.</summary>
+        private static readonly Regex Credential =
+            new Regex(@"sk-ant-[A-Za-z0-9_-]{8,}|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{20,}", RegexOptions.CultureInvariant);
+
+        /// <summary>An e-mail address, of anyone: no recording has had a reason to hold one.</summary>
+        private static readonly Regex EmailAddress =
+            new Regex(@"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}", RegexOptions.CultureInvariant);
+
         private static IEnumerable<string> ForbiddenWords()
         {
             var words = new List<string>(Forbidden);
@@ -62,6 +70,20 @@ namespace ClaudeCliProtocol.Tests
         }
 
         [Fact]
+        public void The_credential_and_address_patterns_find_what_they_look_for()
+        {
+            // put together here, so no scanner takes this file for a leak
+            foreach (var text in new[] { "sk-" + "ant-api03-abcDEF123_-xyz", "ghp" + "_" + new string('a', 36), "github" + "_pat_" + new string('b', 30) })
+                Assert.True(Credential.IsMatch(text), text);
+            foreach (var text in new[] { "a task-ant-hill", "ghp_short", "sk-and-so-on" })
+                Assert.False(Credential.IsMatch(text), text);
+            foreach (var text in new[] { "write to someone@example.org today", "a.b-c@mail.example.com" })
+                Assert.True(EmailAddress.IsMatch(text), text);
+            foreach (var text in new[] { "the @mention", "a@b", "user@localhost" })
+                Assert.False(EmailAddress.IsMatch(text), text);
+        }
+
+        [Fact]
         public void Fixtures_have_no_private_data()
         {
             var files = Directory.GetFiles(FixtureFiles.Directory);
@@ -79,6 +101,9 @@ namespace ClaudeCliProtocol.Tests
 
                 var match = OtherUserFolder.Match(text);
                 Assert.False(match.Success, Path.GetFileName(file) + " has a user folder other than 'demo'");
+                // what was found is not shown: this message goes to a public log
+                Assert.False(Credential.IsMatch(text), Path.GetFileName(file) + " has what looks like a credential");
+                Assert.False(EmailAddress.IsMatch(text), Path.GetFileName(file) + " has an e-mail address");
             }
         }
 

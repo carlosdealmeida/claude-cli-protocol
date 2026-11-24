@@ -15,11 +15,12 @@ that speak it, first in .NET and then in Delphi.
 
 ## Status
 
-**Phase 1, as of 2026-11-23.** The .NET library reads and writes the protocol: events, the two
-parsers, commands, session and replay of recordings. The code came from the `Protocol/` folder of
-[Claude Visual Chat](https://github.com/carlosdealmeida/claude-visual-chat) and passes the 42
-recordings of `fixtures/`, on both targets. It does not start `claude` by itself yet: that transport
-is phase 2. No package has been published and the site is not live yet.
+**Phase 2, as of 2026-11-24.** The .NET library reads and writes the protocol and starts the `claude
+-p` of this machine: events, the two parsers, commands, session, replay of recordings and
+`ProcessTransport`. It passes the 42 recordings of `fixtures/`, on both targets. The transport is
+tested with a make-believe `claude`; against a real `claude` (2.1.331, on Windows) it has run once,
+with one short message, in a test that runs only when asked. No package has been published and the
+site is not live yet.
 
 ## What is in here
 

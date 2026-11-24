@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- A make-believe claude for the transport tests: it shows what it was started with, plays a script and
+       echoes its stdin. It never talks to anything. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>FakeClaude</RootNamespace>
+    <AssemblyName>FakeClaude</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <UseAppHost>true</UseAppHost>
+    <!-- run on whatever newer runtime the machine has when .NET 6 is not there -->
+    <RollForward>LatestMajor</RollForward>
+  </PropertyGroup>
+
+</Project>

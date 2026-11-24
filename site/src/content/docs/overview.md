@@ -14,8 +14,10 @@ Projeto da comunidade, sem vínculo com a Anthropic nem endosso dela.
 
 ## Estado
 
-**Fase 1, em 2026-11-23.** A lib .NET lê e escreve o protocolo e passa nas 42 gravações do
-repositório. Ela ainda não sobe o `claude` sozinha (fase 2), e nenhum pacote foi publicado.
+**Fase 2, em 2026-11-24.** A lib .NET lê e escreve o protocolo, sobe o `claude -p` desta máquina e
+passa nas 42 gravações do repositório. O transporte é testado com um `claude` de mentira; contra um
+`claude` de verdade ele rodou uma vez, com uma mensagem curta, num teste que só roda a pedido.
+Nenhum pacote foi publicado.
 
 ## As camadas
 

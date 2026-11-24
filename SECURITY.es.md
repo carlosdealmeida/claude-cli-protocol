@@ -47,8 +47,9 @@ relevantes, entre otros:
 - **Datos personales en una grabación.** El nombre de usuario, una carpeta, el correo o una
   credencial de quien la grabó, dentro de un archivo de `fixtures/`.
 
-La biblioteca llega por fases, y parte de lo anterior aún no se ha escrito. El alcance vale para
-lo que ya existe y para lo que vaya llegando.
+La biblioteca .NET ya inicia el proceso y cumple la regla de la respuesta de permiso en
+`ProcessTransport`. La biblioteca en Delphi aún no existe; el alcance también la cubre cuando
+llegue.
 
 Fuera de alcance: fallos del propio Claude Code (repórtalos a Anthropic) y vulnerabilidades en
 dependencias de desarrollo que no forman parte del paquete publicado.

@@ -26,6 +26,19 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ClaudeCliProtocol\ClaudeCliProtocol.csproj" />
+    <!-- the make-believe claude: built first, not referenced as an assembly. It has one target of its own,
+         so the target of this project is taken off the call: with the same properties as the solution's
+         build of it, it is built once, not twice into the same folders -->
+    <ProjectReference Include="..\FakeClaude\FakeClaude.csproj" ReferenceOutputAssembly="false"
+                      SkipGetTargetFrameworkProperties="true" GlobalPropertiesToRemove="TargetFramework" />
   </ItemGroup>
+
+  <!-- its output goes to fake-claude/ next to the test assembly of each target -->
+  <Target Name="CopyFakeClaude" AfterTargets="Build" Condition="'$(TargetFramework)' != ''">
+    <ItemGroup>
+      <FakeClaudeFiles Include="..\FakeClaude\bin\$(Configuration)\net6.0\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(FakeClaudeFiles)" DestinationFolder="$(OutDir)fake-claude\%(RecursiveDir)" SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>

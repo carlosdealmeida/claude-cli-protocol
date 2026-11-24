@@ -7,9 +7,10 @@ for .NET: typed events, commands, a session and swappable transports. No UI and 
 
 ## Status
 
-**No release yet.** As of 2026-11-23 the library reads and writes the protocol and passes the 42
-recordings of the repository, on both targets. It does not start `claude` by itself yet: the
-transport that does arrives in phase 2. Follow the
+**No release yet.** As of 2026-11-24 the library reads and writes the protocol, starts the `claude
+-p` of the machine (`ProcessTransport`) and passes the 42 recordings of the repository, on both
+targets. The transport is tested against a make-believe `claude`; against a real one (2.1.331, on
+Windows) it has run once, with one short message, in a test that runs only when asked. Follow the
 [roadmap](https://github.com/carlosdealmeida/claude-cli-protocol/blob/master/README.en.md#roadmap).
 
 ## What is in it
@@ -21,7 +22,9 @@ transport that does arrives in phase 2. Follow the
   `SetPermissionMode`, `SetModel`, `Interrupt`…) are plain data. `StdinWriter` turns one into the
   JSON line for the stdin of `claude`.
 - **Transport:** `IClaudeTransport` carries lines one way and commands the other.
-  `ReplayTransport` plays a recording.
+  `ProcessTransport` starts the `claude` of this machine, with a checked command line, and ends its
+  process tree when disposed (on .NET 6 or later, and on Windows; a .NET Standard 2.0 consumer on
+  another system ends only the claude itself). `ReplayTransport` plays a recording.
 - **Session:** `ClaudeSession` reads a transport into events and keeps the state the lines tell:
   busy, pending permission requests, session id, confirmed mode and model.
 
@@ -29,6 +32,46 @@ Came from [Claude Visual Chat](https://github.com/carlosdealmeida/claude-visual-
 `Protocol/` folder this library now holds on its own.
 
 ## Use
+
+Talk to the claude of this machine:
+
+```csharp
+using ClaudeCliProtocol;
+
+var transport = new ProcessTransport(new ProcessTransportOptions(projectFolder));
+await using var session = new ClaudeSession(transport);
+transport.Start();
+
+await session.SendAsync(new SendUserMessage("Change line 3 of notes.md."));
+await foreach (var e in session.ReadEventsAsync())
+{
+    if (e is BlockDelta { Kind: DeltaKind.Text, ParentToolUseId: null } delta)
+    {
+        Console.Write(delta.Text); // the reply, piece by piece
+    }
+    else if (e is PermissionRequested request)
+    {
+        // the transport writes the answer with the input it read from the claude itself
+        await session.SendAsync(new AnswerPermission(request.RequestId, PermissionDecision.Allow));
+    }
+    else if (e is TurnCompleted)
+    {
+        break;
+    }
+}
+```
+
+`ReadEventsAsync` is read once per session. The example leaves the loop at the end of the first
+turn; an application keeps the same loop for the whole conversation and sends each new message
+from it or from another thread.
+
+`ProcessTransportOptions` takes the folder, the permission mode (`plan`, `default`, `acceptEdits`
+or `auto`), a session to resume, the model, the effort and extra environment variables
+(`CLAUDE_CONFIG_DIR` selects the account). Every value that reaches the command line is checked
+before anything starts, and a permission mode asked for later goes through the same list. The
+path of the claude, when given, must be absolute. The claude's stderr is read and dropped; `ExitCode` tells how it ended.
+There is a complete console chat in
+[examples/dotnet-console](https://github.com/carlosdealmeida/claude-cli-protocol/tree/master/examples/dotnet-console).
 
 Read a line the claude wrote:
 
@@ -84,8 +127,9 @@ The answer to a permission request always carries the tool's `input` and the
   suggestions that came with a command or from whoever sent it; the library cannot enforce that for
   a caller that does otherwise.
 
-The library has no transport that writes to a process yet (it arrives in phase 2), so today the
-rule lives in the types and in the ledger, and no code path of the library writes an answer.
+`ProcessTransport` is that side for a claude on this machine: it keeps a ledger of its own, fed by
+the lines it reads from the claude's stdout, and writes each answer from the request that ledger
+holds. An answer to a request that is not pending there writes nothing.
 
 ## Targets and dependencies
 

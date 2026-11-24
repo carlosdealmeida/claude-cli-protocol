@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -47,6 +48,80 @@ namespace ClaudeCliProtocol.Tests
 
             Assert.Equal(2, answered); // the recording asks about an Edit and a Write
             Assert.False(session.IsBusy);
+        }
+
+        [Fact]
+        public async Task Talk_to_the_claude_of_this_machine()
+        {
+            // The make-believe claude plays a whole real recording, an Edit and a Write, each asked about. It waits
+            // where the real one would: for the handshake and the message before anything, and for an answer after
+            // each permission request. An answer that is never written leaves it waiting, and the test fails.
+            // What an answer carries is checked in ProcessTransportSendTests.
+            var script = new List<string> { "{\"type\":\"fake_read\",\"count\":2}" };
+            foreach (var recorded in FixtureFiles.StreamLines("edit"))
+            {
+                script.Add(recorded);
+                if (recorded.Contains("\"can_use_tool\"")) script.Add("{\"type\":\"fake_read\",\"count\":1}");
+            }
+            var projectFolder = FakeClaudeHost.TempFolder();
+            var options = new ProcessTransportOptions(projectFolder)
+            {
+                ClaudePath = FakeClaudeHost.Path,
+                Environment = new Dictionary<string, string?>
+                {
+                    ["FAKE_CLAUDE_SCRIPT"] = FakeClaudeHost.Script(script.ToArray()),
+                },
+            };
+            var reply = new System.Text.StringBuilder();
+            var asked = 0;
+            var ended = false;
+            var events = 0;
+            var where = "before the start";
+            var busyAtTheEnd = true;
+
+            var talk = Task.Run(async () =>
+            {
+            // --- README ---
+            var transport = new ProcessTransport(options); // new ProcessTransportOptions(projectFolder)
+            await using var session = new ClaudeSession(transport);
+            transport.Start();
+
+            where = "started";
+            await session.SendAsync(new SendUserMessage("Change line 3 of notes.md."));
+            where = "message sent";
+            await foreach (var e in session.ReadEventsAsync())
+            {
+                events++;
+                where = "at " + e.GetType().Name;
+                if (e is BlockDelta { Kind: DeltaKind.Text, ParentToolUseId: null } delta)
+                {
+                    reply.Append(delta.Text); // the reply, piece by piece
+                }
+                else if (e is PermissionRequested request)
+                {
+                    // the transport writes the answer with the input it read from the claude itself
+                    await session.SendAsync(new AnswerPermission(request.RequestId, PermissionDecision.Allow));
+                    asked++;
+                    where = "after the answer " + asked;
+                }
+                else if (e is TurnCompleted)
+                {
+                    ended = true;
+                    break;
+                }
+            }
+            // --- /README ---
+            busyAtTheEnd = session.IsBusy;
+            where = "disposing";
+            });
+            if (await Task.WhenAny(talk, Task.Delay(TimeSpan.FromSeconds(90))) != talk)
+                Assert.Fail("The conversation did not end: " + where + ", " + events + " events, " + asked + " answers.");
+            await talk;
+
+            Assert.True(ended);
+            Assert.Equal(2, asked);
+            Assert.True(reply.Length > 0);
+            Assert.False(busyAtTheEnd);
         }
 
         [Fact]

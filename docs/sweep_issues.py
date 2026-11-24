@@ -26,7 +26,16 @@ import time
 REPO = "anthropics/claude-code"
 
 # Issues docs/ROADMAP.md already tracks (validated, delivered or discarded).
-KNOWN = set()
+KNOWN = {
+    # sweep 2026-11-24
+    111427, 109249, 110808, 109534, 110401,             # items 2, 3, 5, 8, 9 (phase 2)
+    111343,                                             # item 13 (covered)
+    111046, 106811, 108132, 110490, 110918,             # items 15-19 (to follow)
+    110943, 107349, 109393, 110211, 110540,             # item 20
+    111159, 111811, 107839,                             # item 20
+    107106, 107134, 108851,                             # item 21 (discarded: billing)
+    109679, 106877, 106868, 108577, 110977,             # item 21 (discarded: not the -p protocol)
+}
 
 # (label, query); every query gets `repo:` and `is:issue`.
 QUERIES = [

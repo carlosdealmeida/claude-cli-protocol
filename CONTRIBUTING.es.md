@@ -52,9 +52,11 @@ escriben en portugués; una issue o un pull request en español o en inglés es 
 ## Fixtures
 
 Las grabaciones de `fixtures/` son sesiones reales de `claude -p`. Ninguna entra con datos
-personales de quien la grabó: nombre de usuario, carpetas, correo o credenciales. El grabador cambia
-todo eso por valores de demostración, y la prueba `FixturePrivacyTests` revisa cada archivo. El
-grabador llega en la fase 2. Cada grabación tiene al lado su resultado esperado; el formato está en
+personales de quien la grabó: nombre de usuario, carpetas, correo o credenciales. El grabador
+(`tools/gravar.py`) cambia la carpeta, el home y el nombre de usuario por valores de demostración, y
+la prueba `FixturePrivacyTests` busca en cada archivo una carpeta de otro usuario, una credencial y
+una dirección de correo. Ninguno de los dos entiende el texto de la conversación: lee la grabación
+antes de enviarla. El grabador inicia el `claude` real y usa la cuenta de la máquina. Cada grabación tiene al lado su resultado esperado; el formato está en
 [fixtures/README.md](fixtures/README.md) (en portugués).
 
 ## Traducciones

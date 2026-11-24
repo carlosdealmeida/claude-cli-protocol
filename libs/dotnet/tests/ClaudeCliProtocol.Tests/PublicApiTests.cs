@@ -64,6 +64,13 @@ namespace ClaudeCliProtocol.Tests
         }
 
         [Fact]
+        public void The_process_transport_is_public()
+        {
+            foreach (var name in new[] { "ProcessTransport", "ProcessTransportOptions", "ClaudeArguments", "ClaudeLocator" })
+                Assert.Contains("ClaudeCliProtocol." + name, Names);
+        }
+
+        [Fact]
         public void Every_public_type_is_in_the_one_namespace()
         {
             Assert.All(typeof(AnsiText).Assembly.GetExportedTypes(), t => Assert.Equal("ClaudeCliProtocol", t.Namespace));

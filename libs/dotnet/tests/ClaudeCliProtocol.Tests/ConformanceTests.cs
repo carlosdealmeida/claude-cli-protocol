@@ -164,6 +164,20 @@ namespace ClaudeCliProtocol.Tests
         }
 
         [Fact]
+        public void Every_recording_belongs_to_a_listed_scenario()
+        {
+            // a recording nobody listed would sit in fixtures/ with no expected result and no test reading it
+            var listed = new HashSet<string>(FixtureFiles.Scenarios);
+            foreach (var file in Directory.GetFiles(FixtureFiles.Directory))
+            {
+                var name = Path.GetFileName(file);
+                foreach (var suffix in new[] { ".stream.ndjson", ".transcript.jsonl", ".stream.expected.json", ".transcript.expected.json" })
+                    if (name.EndsWith(suffix, StringComparison.Ordinal))
+                        Assert.Contains(name.Substring(0, name.Length - suffix.Length), listed);
+            }
+        }
+
+        [Fact]
         public void Every_scenario_has_its_two_expected_files()
         {
             foreach (var scenario in FixtureFiles.Scenarios)

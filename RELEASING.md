@@ -26,9 +26,9 @@ O que já rodou no GitHub, no primeiro push:
 O que nunca rodou:
 
 - **`release.yml`**: nenhuma tag foi criada.
-- **`fixtures.yml`**: no agendamento ele avisa que não há gravador e termina sem erro. Os passos
-  que instalam o Claude Code, gravam e abrem o pull request só rodam a partir da fase 2, quando o
-  gravador chegar.
+- **`fixtures.yml`**: sem o secret `ANTHROPIC_API_KEY` ele avisa e termina sem erro, e é isso que
+  acontece hoje no agendamento. Os passos que instalam o Claude Code, gravam e abrem o pull request
+  nunca rodaram.
 
 ## Fazer um release
 

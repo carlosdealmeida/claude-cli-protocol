@@ -91,3 +91,6 @@ jobs:
 
       # the pure parts of the sweep of anthropics/claude-code (docs/ROADMAP.md)
       - run: python -I docs/test_sweep_issues.py -v
+
+      # the sanitizer of the fixture recorder; recording itself needs a real claude and is not done here
+      - run: python -I tools/test_gravar.py

@@ -2,9 +2,6 @@
 
 Exemplos pequenos de uso das libs, todos de console. Tela nenhuma entra neste repositório.
 
-## Estado
-
-Em 2026-11-22 a pasta está vazia.
-
-- **Console .NET:** chega na fase 2, junto com o transporte que sobe o `claude`.
+- **[dotnet-console](dotnet-console/README.md):** uma conversa com o `claude` desta máquina, em
+  .NET. Compila com a solução da lib; veja no README dele o que já foi rodado.
 - **Console Delphi:** chega na fase 6, junto com a lib em Delphi.
