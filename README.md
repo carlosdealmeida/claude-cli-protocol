@@ -17,9 +17,9 @@ primeiro em .NET e depois em Delphi.
 
 **Fase 2, em 2026-11-24.** A lib .NET lê e escreve o protocolo e sobe o `claude -p` desta máquina:
 eventos, os dois parsers, comandos, sessão, replay de gravações e o `ProcessTransport`. Ela passa
-nas 42 gravações de `fixtures/`, nos dois targets, e o transporte é testado com um `claude` de
-mentira. Ainda não foi rodada contra um `claude` de verdade neste repositório, nenhum pacote foi
-publicado e o site ainda não está no ar.
+nas 42 gravações de `fixtures/`, nos dois targets. O transporte é testado com um `claude` de
+mentira; contra um `claude` de verdade (2.1.331, no Windows) ele rodou uma vez, com uma mensagem
+curta, num teste que só roda a pedido. Nenhum pacote foi publicado e o site ainda não está no ar.
 
 ## O que tem aqui
 

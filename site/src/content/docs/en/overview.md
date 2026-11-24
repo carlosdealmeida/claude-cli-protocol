@@ -16,8 +16,8 @@ Community project, not affiliated with or endorsed by Anthropic.
 
 **Phase 2, as of 2026-11-24.** The .NET library reads and writes the protocol, starts the `claude
 -p` of this machine and passes the 42 recordings of the repository. The transport is tested with a
-make-believe `claude`; it has not been run against a real `claude` here yet, and no package has been
-published.
+make-believe `claude`; against a real `claude` it has run once, with one short message, in a test
+that runs only when asked. No package has been published.
 
 ## The layers
 

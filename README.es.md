@@ -17,9 +17,10 @@ lo hablan, primero en .NET y después en Delphi.
 
 **Fase 2, a 2026-11-24.** La biblioteca .NET lee y escribe el protocolo e inicia el `claude -p` de
 esta máquina: eventos, los dos parsers, comandos, sesión, reproducción de grabaciones y
-`ProcessTransport`. Pasa las 42 grabaciones de `fixtures/`, en los dos targets, y el transporte se
-prueba con un `claude` simulado. Todavía no se ha ejecutado contra un `claude` real en este
-repositorio, no se ha publicado ningún paquete y el sitio todavía no está en línea.
+`ProcessTransport`. Pasa las 42 grabaciones de `fixtures/`, en los dos targets. El transporte se
+prueba con un `claude` simulado; contra un `claude` real (2.1.331, en Windows) se ha ejecutado una
+vez, con un mensaje corto, en una prueba que solo se ejecuta a petición. No se ha publicado ningún
+paquete y el sitio todavía no está en línea.
 
 ## Qué hay aquí
 

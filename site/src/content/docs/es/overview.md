@@ -16,8 +16,8 @@ Proyecto de la comunidad, sin afiliación ni respaldo de Anthropic.
 
 **Fase 2, a 2026-11-24.** La biblioteca .NET lee y escribe el protocolo, inicia el `claude -p` de
 esta máquina y pasa las 42 grabaciones del repositorio. El transporte se prueba con un `claude`
-simulado; todavía no se ha ejecutado contra un `claude` real aquí, y no se ha publicado ningún
-paquete.
+simulado; contra un `claude` real se ha ejecutado una vez, con un mensaje corto, en una prueba que
+solo se ejecuta a petición. No se ha publicado ningún paquete.
 
 ## Las capas
 

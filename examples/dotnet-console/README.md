@@ -6,9 +6,10 @@ manda os comandos, e a resposta a um pedido de permissão leva só o pedido e a 
 
 ## Estado
 
-Em 2026-11-24 o exemplo **compila** junto com a solução da lib. **Ainda não foi rodado contra um
-`claude` de verdade.** O transporte que ele usa é testado com um `claude` de mentira; o teste com o
-`claude` de verdade existe (`LiveClaudeTests`) e só roda quando pedido, com `CCP_LIVE_CLAUDE=1`.
+Em 2026-11-24 o exemplo **compila** junto com a solução da lib. **O exemplo em si ainda não foi
+rodado contra um `claude` de verdade.** O transporte que ele usa é testado com um `claude` de
+mentira, e rodou uma vez contra um `claude` de verdade (2.1.331, no Windows) no teste
+`LiveClaudeTests`, que só roda quando pedido, com `CCP_LIVE_CLAUDE=1`.
 
 ## Rodar
 
