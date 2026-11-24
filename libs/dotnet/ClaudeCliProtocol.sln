@@ -11,6 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{F521DEDB-36B
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClaudeCliProtocol", "src\ClaudeCliProtocol\ClaudeCliProtocol.csproj", "{B2383C65-0F29-498E-9DCB-434B0D770DE6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FakeClaude", "tests\FakeClaude\FakeClaude.csproj", "{9EF68CCB-39B1-493A-A68E-7568BE3EA427}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -28,9 +30,14 @@ Global
 		{B2383C65-0F29-498E-9DCB-434B0D770DE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B2383C65-0F29-498E-9DCB-434B0D770DE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B2383C65-0F29-498E-9DCB-434B0D770DE6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9EF68CCB-39B1-493A-A68E-7568BE3EA427}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9EF68CCB-39B1-493A-A68E-7568BE3EA427}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9EF68CCB-39B1-493A-A68E-7568BE3EA427}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9EF68CCB-39B1-493A-A68E-7568BE3EA427}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{DDB0EB7F-3A6B-4103-9025-84A3B52AA011} = {4FE0BD9D-CAC6-45CC-9E40-BD8441704B49}
 		{B2383C65-0F29-498E-9DCB-434B0D770DE6} = {F521DEDB-36B1-4330-93F4-80A922F10B52}
+		{9EF68CCB-39B1-493A-A68E-7568BE3EA427} = {4FE0BD9D-CAC6-45CC-9E40-BD8441704B49}
 	EndGlobalSection
 EndGlobal

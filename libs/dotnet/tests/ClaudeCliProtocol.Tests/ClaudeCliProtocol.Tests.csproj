@@ -26,6 +26,17 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ClaudeCliProtocol\ClaudeCliProtocol.csproj" />
+    <!-- the make-believe claude: built first, not referenced as an assembly -->
+    <ProjectReference Include="..\FakeClaude\FakeClaude.csproj" ReferenceOutputAssembly="false"
+                      SkipGetTargetFrameworkProperties="true" SetTargetFramework="TargetFramework=net6.0" />
   </ItemGroup>
+
+  <!-- its output goes to fake-claude/ next to the test assembly of each target -->
+  <Target Name="CopyFakeClaude" AfterTargets="Build" Condition="'$(TargetFramework)' != ''">
+    <ItemGroup>
+      <FakeClaudeFiles Include="..\FakeClaude\bin\$(Configuration)\net6.0\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(FakeClaudeFiles)" DestinationFolder="$(OutDir)fake-claude\%(RecursiveDir)" SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>
