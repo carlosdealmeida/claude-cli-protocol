@@ -14,21 +14,20 @@ A lib Delphi entra no mesmo release como um zip, a partir da fase 6.
 
 ## Estado
 
-Em 2026-11-22: nenhum release saiu, e nenhuma das configurações de "Uma vez só" foi feita. O
-repositório está público desde 2026-11-22, com o primeiro push no mesmo dia.
+Em 2026-11-24 saiu o primeiro release, o **0.1.0**, e as configurações de "Uma vez só" estão
+feitas: o Trusted Publishing no nuget.org com o secret `NUGET_USER`, o relato privado de
+vulnerabilidades, o GitHub Pages e a chave das fixtures.
 
-O que já rodou no GitHub, no primeiro push:
+O que já rodou no GitHub:
 
-- **`ci.yml`: passou.** Os três jobs (a lib .NET em Windows e Ubuntu, o site e a estrutura).
-- **`pages.yml`: o build passou e o deploy falhou**, porque o GitHub Pages ainda não está ligado
-  (veja "GitHub Pages" abaixo). O site não está no ar.
-
-O que nunca rodou:
-
-- **`release.yml`**: nenhuma tag foi criada.
-- **`fixtures.yml`**: sem o secret `ANTHROPIC_API_KEY` ele avisa e termina sem erro, e é isso que
-  acontece hoje no agendamento. Os passos que instalam o Claude Code, gravam e abrem o pull request
-  nunca rodaram.
+- **`ci.yml`: passa** nos quatro jobs (a lib .NET em Windows e Ubuntu, o site e a estrutura).
+- **`release.yml`: rodou uma vez, com a tag `v0.1.0`, e passou em todos os passos.** O GitHub
+  Release tem o `.nupkg` e o `.snupkg`, e o pacote `ClaudeCliProtocol` 0.1.0 está no nuget.org.
+- **`pages.yml`: passou** depois que o Pages foi ligado. O site está em
+  <https://carlosdealmeida.github.io/claude-cli-protocol/>.
+- **`fixtures.yml`: rodou uma vez com o `claude` de verdade e não chegou ao pull request.** Ele
+  gravou os cenários, e o `hook-ask` não atendeu às esperas do roteiro: o pedido de permissão veio
+  sem o motivo do hook. A causa não foi apurada. O job que abre o pull request nunca rodou.
 
 ## Fazer um release
 
@@ -73,8 +72,8 @@ O workflow não guarda chave do NuGet. Ele troca o token OIDC do GitHub por uma 
    gh secret set NUGET_USER -R carlosdealmeida/claude-cli-protocol
    ```
 
-O nome do pacote, `ClaudeCliProtocol`, estava livre no nuget.org em 2026-11-22. Ele só fica
-reservado com a primeira publicação.
+O nome do pacote, `ClaudeCliProtocol`, é deste repositório no nuget.org desde a publicação da
+0.1.0, em 2026-11-24.
 
 ### Relato privado de vulnerabilidades
 

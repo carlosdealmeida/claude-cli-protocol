@@ -14,10 +14,12 @@ Community project, not affiliated with or endorsed by Anthropic.
 
 ## Status
 
-**Phase 2, as of 2026-11-24.** The .NET library reads and writes the protocol, starts the `claude
--p` of this machine and passes the 42 recordings of the repository. The transport is tested with a
-make-believe `claude`; against a real `claude` it has run once, with one short message, in a test
-that runs only when asked. No package has been published.
+**Version 0.1.0, of 2026-11-24.** The .NET library is on NuGet:
+`dotnet add package ClaudeCliProtocol`
+([nuget.org](https://www.nuget.org/packages/ClaudeCliProtocol)). It reads and writes the protocol,
+starts the `claude -p` of this machine and passes the 42 recordings of the repository. The transport
+is tested with a make-believe `claude`; against a real `claude` it has run once, with one short
+message, in a test that runs only when asked.
 
 ## The layers
 

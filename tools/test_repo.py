@@ -164,12 +164,12 @@ class Readmes(unittest.TestCase):
         counts = {name: sum(1 for line in read(name).splitlines() if line.startswith("## ")) for name in READMES}
         self.assertEqual(len(set(counts.values())), 1, counts)
 
-    def test_no_readme_claims_a_published_package(self):
-        # nothing is published in phase 0: no install instruction and no NuGet badge
+    def test_every_readme_tells_how_to_install_the_package_by_its_id(self):
+        # the package is on NuGet since 0.1.0 (2026-11-24): the install line names the id of the project
+        project = read("libs/dotnet/src/ClaudeCliProtocol/ClaudeCliProtocol.csproj")
+        package = re.search(r"<PackageId>([^<]+)</PackageId>", project).group(1)
         for name in READMES:
-            text = read(name)
-            self.assertNotIn("dotnet add package", text, name)
-            self.assertNotIn("img.shields.io/nuget", text, name)
+            self.assertIn("dotnet add package " + package + "`", read(name), name)
 
 
 class Layout(unittest.TestCase):
