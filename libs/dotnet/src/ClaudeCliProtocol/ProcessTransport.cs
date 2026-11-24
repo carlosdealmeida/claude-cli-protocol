@@ -116,6 +116,8 @@ namespace ClaudeCliProtocol
             }
 
             var process = new Process { StartInfo = info, EnableRaisingEvents = true };
+            var exited = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            process.Exited += (_, __) => exited.TrySetResult(true); // told by the system: no thread waits for it
             process.Start();
             lock (_gate)
             {
@@ -130,9 +132,11 @@ namespace ClaudeCliProtocol
             var handshake = _options.SendInitialize ? StdinWriter.Write(new Initialize { RequestId = NewRequestId() }) : null;
             if (handshake != null) _writing.Wait();
 
-            _stdoutReader = Task.Run(() => ReadStdout(process));
-            _stderrReader = Task.Run(() => ReadStderr(process));
-            _ = Task.Run(() => WatchAsync(process));
+            // The two reads block for as long as the claude lives. Each has a thread of its own: on threads of the
+            // pool, a few claudes running would leave the application with none.
+            _stdoutReader = OnItsOwnThread("claude stdout", () => ReadStdout(process));
+            _stderrReader = OnItsOwnThread("claude stderr", () => ReadStderr(process));
+            _ = WatchAsync(process, exited.Task);
 
             if (handshake != null) _ = Task.Run(() => WriteHeldAsync(handshake));
         }
@@ -240,6 +244,36 @@ namespace ClaudeCliProtocol
             process.Dispose();
         }
 
+        /// <summary>
+        /// Runs a read on a background thread of its own. The task ends when the read ends, however it ends: an
+        /// exception stays here, as it stayed in the task before, and never takes the application down.
+        /// </summary>
+        private static Task OnItsOwnThread(string name, Action read)
+        {
+            var done = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var thread = new Thread(() =>
+            {
+                try
+                {
+                    read();
+                }
+                catch (Exception)
+                {
+                    // the end is told by the process, not by this thread
+                }
+                finally
+                {
+                    done.TrySetResult(true);
+                }
+            })
+            {
+                IsBackground = true,
+                Name = name,
+            };
+            thread.Start();
+            return done.Task;
+        }
+
         private void ReadStdout(Process process)
         {
             try
@@ -313,12 +347,12 @@ namespace ClaudeCliProtocol
         }
 
         /// <summary>The end comes from the process, not from the end of stdout.</summary>
-        private async Task WatchAsync(Process process)
+        private async Task WatchAsync(Process process, Task exited)
         {
             int? code = null;
             try
             {
-                await Task.Run(() => process.WaitForExit(Timeout.Infinite)).ConfigureAwait(false);
+                await exited.ConfigureAwait(false);
                 code = process.ExitCode;
             }
             catch (Exception e) when (e is InvalidOperationException || e is SystemException)
