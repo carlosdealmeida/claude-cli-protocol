@@ -372,3 +372,34 @@ Achados na leitura do código, com a resposta do dono do projeto a cada um.
     `StdinWriter` confia no pedido que recebe: ele é uma peça para o lado do processo, e a lib não
     tem como impedir que esse lado lhe passe outro pedido. O transporte que escreve no processo
     (fase 2) é o ponto onde a regra se cumpre.
+
+## Decidido em 2026-11-24 (fase 2)
+
+11. **Encerrar é matar a árvore, na hora.** O `ProcessTransport` não tenta um fim educado antes.
+    Depois que o `claude` sai sozinho, os filhos dele não podem mais ser achados pelo pid dele, então
+    esperar deixaria processos para trás. O custo: o `claude` não termina uma gravação em disco se
+    o app o descarta no meio de um turno. Um filho que sobrevive a um `claude` que saiu por conta
+    própria não é encerrado; é um limite conhecido.
+12. **A interface de transporte continua `Task SendAsync`.** O `ProcessTransport` tem o seu próprio
+    livro de pedidos e não escreve nada quando chega a resposta de um pedido que não está pendente
+    ali. Quem manda o comando não fica sabendo; "enviado" quer dizer "entregue ao transporte".
+13. **O fim vem do processo, não do fim do stdout.** Um filho do `claude` que herdou o stdout pode
+    segurá-lo aberto. Depois que o processo termina, o transporte espera as últimas linhas por um
+    tempo limitado e fecha.
+14. **O `Start` não espera a escrita do `initialize`.** Ele pega a vez de escrever, começa a ler o
+    stdout e só então escreve. Achado em teste: na build `netstandard2.0`, sob o .NET Framework, o
+    `Start` não voltava quando o `claude` escrevia muito antes de ler o stdin. O motivo exato de
+    aquela primeira escrita não terminar não foi apurado; o que se sabe é que ela termina quando
+    alguém lê o stdout.
+15. **Transporte fechado, nada é enviado.** Na `ClaudeSession`, um comando depois do fechamento
+    devolve `false` e não deixa a sessão ocupada. Uma leitura que levanta exceção conta como
+    fechamento; uma leitura cancelada não muda nada.
+16. **A exceção de um assinante de `StateChanged` é descartada**, como o supervisor de referência
+    faz com os avisos dele: ela não pode parar um comando a caminho do `claude` nem a leitura das
+    linhas dele.
+17. **Só as pastas absolutas do PATH.** O `ClaudeLocator` nunca procura o `claude` na pasta atual,
+    que é a pasta da conversa.
+18. **As leituras têm thread própria.** O stdout e o stderr do `claude` são lidos em duas threads de
+    segundo plano do transporte, e o fim do processo vem do evento `Exited`. Achado em teste: com as
+    leituras em threads do pool, cada `claude` em execução prendia três delas pela vida inteira, e
+    numa máquina de 4 núcleos dois transportes vivos já deixavam o resto do programa esperando.

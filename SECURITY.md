@@ -47,8 +47,8 @@ entre outros:
 - **Dado pessoal numa gravação.** Nome de usuário, pasta, e-mail ou credencial de quem gravou
   dentro de um arquivo de `fixtures/`.
 
-A lib chega em fases, e parte do que está acima ainda não foi escrita. O escopo vale para o que
-já existe e para o que for chegando.
+A lib .NET já sobe o processo e cumpre a regra da resposta de permissão no `ProcessTransport`. A lib
+em Delphi ainda não existe; o escopo vale também para ela quando chegar.
 
 Fora de escopo: falhas do próprio Claude Code (reporte à Anthropic) e vulnerabilidades em
 dependências de desenvolvimento que não entram no pacote publicado.

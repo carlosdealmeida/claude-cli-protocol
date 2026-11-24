@@ -35,13 +35,14 @@ Triados na varredura de 2026-11-24. O número de versão é a do Claude Code em 
 
 ### Para a fase 2 (o transporte que sobe o `claude`)
 
-1. 📐 **O código de saída é o único sinal de uma partida que falhou.** A lib lê e descarta o stderr.
+1. ✅ **O código de saída é o único sinal de uma partida que falhou.** A lib lê e descarta o stderr.
    Desde a 2.1.314 o `claude -p` imprime o erro e sai com 1 quando a partida falha (antes saía com 0
    e sem saída); a 2.1.317, a 2.1.319, a 2.1.321 e a 2.1.330 fizeram o mesmo para disco cheio e para
-   o modo auto recusado. O transporte precisa entregar o código de saída a quem o usa.
-2. 📐 **Não fechar o stdin com mensagem pendente.** [#111427](https://github.com/anthropics/claude-code/issues/111427): com `--input-format stream-json`, o
+   o modo auto recusado. Feito na fase 2: o `ProcessTransport` entrega o código em `ExitCode`.
+2. ✅ **Não fechar o stdin com mensagem pendente.** [#111427](https://github.com/anthropics/claude-code/issues/111427): com `--input-format stream-json`, o
    fim do stdin depois de um turno encerra o processo na hora e perde o que estava pendente. Fechar
-   o stdin é como se encerra, e só se encerra de propósito.
+   o stdin é como se encerra, e só se encerra de propósito. Feito na fase 2: o `ProcessTransport`
+   nunca fecha o stdin sozinho; ele só encerra o `claude` quando é descartado.
 3. 🔍 **Resposta de permissão com `input` grande.** [#109249](https://github.com/anthropics/claude-code/issues/109249): com `--permission-prompt-tool`, um
    resultado grande de "allow" é gravado em arquivo pelo tratamento de saída grande do MCP. A
    resposta da lib devolve o `input` inteiro, então um `Write` de arquivo grande passa por aí.
@@ -57,10 +58,10 @@ Triados na varredura de 2026-11-24. O número de versão é a do Claude Code em 
 6. 🔍 **Prompt com marcação não era confirmado ao host** (2.1.314): prompts com tags como
    `<bash-stdout>` não eram confirmados a um host stream-json local. Conferir o que a lib vê quando
    manda uma mensagem assim com `uuid`.
-7. 📐 **Variáveis de ambiente novas que um host pode querer passar:**
+7. ✅ **Variáveis de ambiente novas que um host pode querer passar:**
    `CLAUDE_CODE_DISABLE_DEFERRED_TOOL_RESUME` (2.1.328), `CLAUDE_CODE_FORK_SUBAGENT` (2.1.328) e
    `CLAUDE_CODE_DISABLE_NESTED_SESSION_ID` (2.1.317). O transporte passa adiante o ambiente que
-   recebe; não conhece nenhuma delas pelo nome.
+   recebe; não conhece nenhuma delas pelo nome. Feito na fase 2: `ProcessTransportOptions.Environment`.
 8. 🔍 **Demora na partida.** A 2.1.325 passou a esperar os dados da conta antes do primeiro pedido, a
    2.1.327 espera até 10 segundos pelos ajustes do modelo, e [#109534](https://github.com/anthropics/claude-code/issues/109534) relata 5 a 7 segundos até o
    primeiro byte desde a 2.1.323. Pesa nos prazos do gravador e do exemplo.

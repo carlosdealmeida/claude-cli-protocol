@@ -14,8 +14,9 @@ Proyecto de la comunidad, sin afiliación ni respaldo de Anthropic.
 
 ## Estado
 
-**Fase 1, a 2026-11-23.** La biblioteca .NET lee y escribe el protocolo y pasa las 42 grabaciones
-del repositorio. Todavía no inicia `claude` por sí sola (fase 2), y no se ha publicado ningún
+**Fase 2, a 2026-11-24.** La biblioteca .NET lee y escribe el protocolo, inicia el `claude -p` de
+esta máquina y pasa las 42 grabaciones del repositorio. El transporte se prueba con un `claude`
+simulado; todavía no se ha ejecutado contra un `claude` real aquí, y no se ha publicado ningún
 paquete.
 
 ## Las capas

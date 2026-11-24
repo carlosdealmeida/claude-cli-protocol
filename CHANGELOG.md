@@ -14,3 +14,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **`IClaudeTransport` and `ReplayTransport`.** A transport carries lines one way and commands the other; `ReplayTransport` plays a recording.
 - **`ClaudeSession`,** which reads a transport into typed events and keeps the state the lines tell: busy, pending permission requests, session id, confirmed mode and model.
 - **The 42 recordings of `fixtures/`** (21 scenarios) and the expected result of each one, in a neutral JSON format that a library in any language can produce.
+- **`ProcessTransport`,** which starts `claude -p` on this machine and talks to it. The command line is a fixed list plus a few checked values (`ClaudeArguments`); the stderr is read and dropped; `ExitCode` tells how the claude ended; disposing ends its process tree. It answers a permission request from the request it read itself, once. A running claude holds no thread of the thread pool: the two reads have threads of their own.
+- **`ClaudeLocator`,** which finds `claude` on the PATH and never looks in the current folder.
+- **A console example** in `examples/dotnet-console`, and an opt-in test against the real claude (`CCP_LIVE_CLAUDE=1`).
+- **The fixture recorder** (`tools/gravar.py`), from Claude Visual Chat. The weekly workflow now writes the expected results again and runs the privacy tests before it opens a pull request.
+
+### Changed
+- **`ClaudeSession` over a transport that fails or has closed.** A read that throws leaves the session closed and idle; a command sent after the transport closed is not sent and answers false; an exception thrown by a `StateChanged` subscriber is dropped.
