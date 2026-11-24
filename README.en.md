@@ -15,13 +15,14 @@ that speak it, first in .NET and then in Delphi.
 
 ## Status
 
-**Version 0.1.0, of 2026-11-24.** The .NET library is on NuGet: `dotnet add package
-ClaudeCliProtocol` ([nuget.org](https://www.nuget.org/packages/ClaudeCliProtocol)). It reads and
-writes the protocol and starts the `claude -p` of this machine: events, the two parsers, commands,
-session, replay of recordings and `ProcessTransport`. It passes the 42 recordings of `fixtures/`, on
-both targets. The transport is tested with a make-believe `claude`; against a real `claude`
-(2.1.331, on Windows) it has run once, with one short message, in a test that runs only when asked.
-The site is at <https://carlosdealmeida.github.io/claude-cli-protocol/en/>.
+**Version 0.1.0, of 2026-11-24.** The .NET library is on NuGet:
+`dotnet add package ClaudeCliProtocol`
+([nuget.org](https://www.nuget.org/packages/ClaudeCliProtocol)). It reads and writes the protocol
+and starts the `claude -p` of this machine: events, the two parsers, commands, session, replay of
+recordings and `ProcessTransport`. It passes the 42 recordings of `fixtures/`, on both targets. The
+transport is tested with a make-believe `claude`; against a real `claude` (2.1.331, on Windows) it
+has run once, with one short message, in a test that runs only when asked. The site is at
+<https://carlosdealmeida.github.io/claude-cli-protocol/en/>.
 
 ## What is in here
 
