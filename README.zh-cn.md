@@ -16,7 +16,7 @@
 
 ## 状态
 
-**第 2 阶段，截至 2026-11-24。** .NET 库已能读写该协议，并能启动本机的 `claude -p`：事件、两个解析器、命令、会话、录制回放和 `ProcessTransport`。它在两个目标框架上通过了 `fixtures/` 中的 42 份录制。传输层使用模拟的 `claude` 进行测试；对真实的 `claude`（2.1.331，Windows）它运行过一次，发送了一条简短消息，该测试仅在明确要求时运行。网站已上线：<https://carlosdealmeida.github.io/claude-cli-protocol/zh-cn/>。尚未发布任何软件包。
+**版本 0.1.0，2026-11-24。** .NET 库已发布到 NuGet：`dotnet add package ClaudeCliProtocol`（[nuget.org](https://www.nuget.org/packages/ClaudeCliProtocol)）。它能读写该协议，并能启动本机的 `claude -p`：事件、两个解析器、命令、会话、录制回放和 `ProcessTransport`。它在两个目标框架上通过了 `fixtures/` 中的 42 份录制。传输层使用模拟的 `claude` 进行测试；对真实的 `claude`（2.1.331，Windows）它运行过一次，发送了一条简短消息，该测试仅在明确要求时运行。网站：<https://carlosdealmeida.github.io/claude-cli-protocol/zh-cn/>。
 
 ## 这里有什么
 

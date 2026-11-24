@@ -154,6 +154,8 @@ semana. Os esperados são escritos pela própria lib, e por isso o teste de conf
 arquivos estão inteiros: quem lê o pull request é que vê se um evento sumiu. Assim uma mudança do
 CLI aparece aqui antes de aparecer em uso.
 
-**Ele nunca rodou até o fim.** Depende do secret `ANTHROPIC_API_KEY` no repositório; sem ele, o
-workflow avisa e termina sem gravar. As gravações de hoje foram feitas à mão, com quatro versões do
-`claude` (2.1.286, 2.1.310, 2.1.323 e 2.1.329).
+**Ele ainda não abriu nenhum pull request.** Depende do secret `ANTHROPIC_API_KEY` no repositório;
+sem ele, o workflow avisa e termina sem gravar. Na primeira rodada com a chave, em 2026-11-24, ele
+gravou os cenários e parou no `hook-ask`, que não atendeu às esperas do roteiro; a causa não foi
+apurada. As gravações de hoje foram feitas à mão, com quatro versões do `claude` (2.1.286, 2.1.310,
+2.1.323 e 2.1.329).

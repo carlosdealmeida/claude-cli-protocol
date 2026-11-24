@@ -14,7 +14,7 @@ description: claude-cli-protocol 是什么、如何分层，以及目前处于�
 
 ## 状态
 
-**第 2 阶段，截至 2026-11-24。** .NET 库已能读写该协议、启动本机的 `claude -p`，并通过了仓库中的 42 份录制。传输层使用模拟的 `claude` 进行测试；对真实的 `claude` 它运行过一次，发送了一条简短消息，该测试仅在明确要求时运行。尚未发布任何软件包。
+**版本 0.1.0，2026-11-24。** .NET 库已发布到 NuGet：`dotnet add package ClaudeCliProtocol`（[nuget.org](https://www.nuget.org/packages/ClaudeCliProtocol)）。它能读写该协议、启动本机的 `claude -p`，并通过了仓库中的 42 份录制。传输层使用模拟的 `claude` 进行测试；对真实的 `claude` 它运行过一次，发送了一条简短消息，该测试仅在明确要求时运行。
 
 ## 分层
 

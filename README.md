@@ -15,12 +15,13 @@ primeiro em .NET e depois em Delphi.
 
 ## Estado
 
-**Fase 2, em 2026-11-24.** A lib .NET lê e escreve o protocolo e sobe o `claude -p` desta máquina:
-eventos, os dois parsers, comandos, sessão, replay de gravações e o `ProcessTransport`. Ela passa
-nas 42 gravações de `fixtures/`, nos dois targets. O transporte é testado com um `claude` de
-mentira; contra um `claude` de verdade (2.1.331, no Windows) ele rodou uma vez, com uma mensagem
-curta, num teste que só roda a pedido. O site está no ar em
-<https://carlosdealmeida.github.io/claude-cli-protocol/>. Nenhum pacote foi publicado ainda.
+**Versão 0.1.0, de 2026-11-24.** A lib .NET está no NuGet: `dotnet add package ClaudeCliProtocol`
+([nuget.org](https://www.nuget.org/packages/ClaudeCliProtocol)). Ela lê e escreve o protocolo e sobe
+o `claude -p` desta máquina: eventos, os dois parsers, comandos, sessão, replay de gravações e o
+`ProcessTransport`. Passa nas 42 gravações de `fixtures/`, nos dois targets. O transporte é testado
+com um `claude` de mentira; contra um `claude` de verdade (2.1.331, no Windows) ele rodou uma vez,
+com uma mensagem curta, num teste que só roda a pedido. O site está em
+<https://carlosdealmeida.github.io/claude-cli-protocol/>.
 
 ## O que tem aqui
 
