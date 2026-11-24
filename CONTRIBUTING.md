@@ -51,7 +51,7 @@ Correção pequena (um erro de digitação, um link) não precisa de spec nem de
 
 As gravações em `fixtures/` são sessões de verdade do `claude -p`. Nenhuma entra com dado pessoal de
 quem gravou: nome de usuário, pastas, e-mail ou credencial. O gravador troca tudo isso por valores
-de demonstração, e o teste `FixturePrivacyTests` confere cada arquivo. O gravador chega na fase 2.
+de demonstração, e o teste `FixturePrivacyTests` confere cada arquivo. O gravador é o `tools/gravar.py`; ele sobe o `claude` de verdade e usa a conta da máquina.
 Cada gravação tem ao lado o seu resultado esperado; o formato está em
 [fixtures/README.md](fixtures/README.md).
 

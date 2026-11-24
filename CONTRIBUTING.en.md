@@ -52,8 +52,7 @@ in Portuguese; an issue or a pull request in English is welcome.
 
 The recordings in `fixtures/` are real `claude -p` sessions. None goes in with personal data of
 whoever recorded it: user name, folders, e-mail or credentials. The recorder replaces all of that
-with demo values, and the `FixturePrivacyTests` test checks every file. The recorder arrives in
-phase 2. Each recording has its expected result next to it; the format is in
+with demo values, and the `FixturePrivacyTests` test checks every file. The recorder is `tools/gravar.py`; it starts the real `claude` and uses the machine's account. Each recording has its expected result next to it; the format is in
 [fixtures/README.md](fixtures/README.md) (in Portuguese).
 
 ## Translations

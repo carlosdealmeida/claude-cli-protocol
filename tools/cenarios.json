@@ -1,0 +1,190 @@
+[
+  {
+    "id": "edit",
+    "setup": {"notes.md": "line one\nline two\nline three\nline four\nline five\nline six\n"},
+    "passos": [
+      {"enviar": "Use the Edit tool to change line 3 of notes.md to 'line 3 (edited)'. Then use the Write tool to create todo.md with two bullet items. Be brief."}
+    ],
+    "respostas": ["allow", "allow"],
+    "espera": ["pedido:Edit", "pedido:Write", "resultado_ok:Edit", "resultado_ok:Write"]
+  },
+  {
+    "id": "bash",
+    "setup": {},
+    "passos": [
+      {"enviar": "Run a shell command that lists this folder, and then another shell command that prints the numbers 1 to 30, one per line. Be brief."}
+    ],
+    "respostas": ["allow", "allow"],
+    "repetir_ultima": true,
+    "espera": ["bash_30_linhas"]
+  },
+  {
+    "id": "subagent",
+    "setup": {"a.txt": "The cat sat on the mat.\n", "b.txt": "Rain fell all night over the hills.\n", "c.txt": "Compilers turn text into programs.\n"},
+    "passos": [
+      {"enviar": "Use the Agent tool to have a subagent read a.txt, b.txt and c.txt in this folder and summarize each in one line. Then reply with just the summary."}
+    ],
+    "respostas": ["allow"],
+    "repetir_ultima": true,
+    "espera": ["subagente"]
+  },
+  {
+    "id": "error",
+    "setup": {},
+    "passos": [
+      {"enviar": "Use the Read tool to read missing.txt in this folder, then tell me in one sentence what happened."}
+    ],
+    "respostas": [],
+    "espera": ["tool_result_erro"]
+  },
+  {
+    "id": "denied",
+    "setup": {},
+    "passos": [
+      {"enviar": "Use the Write tool to create secret.txt containing the word hello. Be brief."}
+    ],
+    "respostas": ["deny:Do not create files, just explain."],
+    "espera": ["recusado_e_resposta"]
+  },
+  {
+    "id": "interrupted",
+    "setup": {},
+    "passos": [
+      {"enviar": "Run a shell command that prints the numbers 1 to 300, one per line, then wait for it to finish."},
+      {"interromper_apos_s": 4}
+    ],
+    "respostas": [],
+    "sem_resposta": true,
+    "espera": ["interrompido"]
+  },
+  {
+    "id": "mode-and-model",
+    "setup": {},
+    "passos": [
+      {"modo": "acceptEdits"},
+      {"modelo": "sonnet"},
+      {"enviar": "Reply in Markdown with a title, a short bullet list, a small table with two columns and a code block with one line of Python. Do not use any tools."},
+      {"modo": "default"},
+      {"enviar": "Use the Write tool to create a.txt containing the word one. Be brief."}
+    ],
+    "respostas": ["allow_always"],
+    "espera": ["set_model_ok", "result_success", "pedido:Write"]
+  },
+  {
+    "id": "image",
+    "setup": {},
+    "passos": [
+      {"inicializar": true},
+      {"imagem": {"largura": 96, "altura": 48, "texto": "What two colors do you see? One line."}}
+    ],
+    "respostas": [],
+    "espera": ["result_success"]
+  },
+  {
+    "id": "commands",
+    "setup": {".claude/commands/hello.md": "---\ndescription: Say hello\nargument-hint: name\n---\nReply with exactly: hello, $ARGUMENTS\n"},
+    "passos": [
+      {"inicializar": true},
+      {"enviar": "Say hi in one line."},
+      {"contexto": true},
+      {"comando": "/hello Ana"},
+      {"comando": "/compact"}
+    ],
+    "respostas": [],
+    "espera": ["result_success"]
+  },
+  {
+    "id": "effort",
+    "setup": {},
+    "passos": [
+      {"inicializar": true},
+      {"esforco": "high"},
+      {"enviar": "Say hi in one line."},
+      {"modelo": "haiku"},
+      {"esforco": "low"}
+    ],
+    "respostas": [],
+    "espera": ["result_success", "set_model_ok"]
+  },
+  {
+    "id": "plan",
+    "setup": {"notes.md": "# Notes\n\nFirst point\nSecond point\nThird point\n"},
+    "passos": [
+      {"modo": "plan"},
+      {"enviar": "Plan a small change: add a line 'Fourth point' at the end of notes.md. Keep the plan to three short steps."}
+    ],
+    "respostas": ["modo:acceptEdits+allow", "allow"],
+    "repetir_ultima": true,
+    "espera": ["pedido:ExitPlanMode", "result_success"]
+  },
+  {
+    "id": "plan-auto",
+    "setup": {"notes.md": "# Notes\n\nFirst point\nSecond point\nThird point\n"},
+    "passos": [
+      {"modo": "plan"},
+      {"enviar": "Plan a small change: add a line 'Fourth point' at the end of notes.md. Keep the plan to three short steps."}
+    ],
+    "respostas": ["modo:auto+allow", "allow"],
+    "repetir_ultima": true,
+    "espera": ["pedido:ExitPlanMode"]
+  },
+  {
+    "id": "plan-feedback",
+    "setup": {"notes.md": "# Notes\n\nFirst point\nSecond point\nThird point\n"},
+    "passos": [
+      {"modo": "plan"},
+      {"enviar": "Plan a small change: add a table of the three points at the end of notes.md. Keep the plan to three short steps."}
+    ],
+    "respostas": ["deny:Use a list instead of a table.", "allow"],
+    "repetir_ultima": true,
+    "espera": ["pedido:ExitPlanMode", "recusado_e_resposta"]
+  },
+  {
+    "id": "queued",
+    "setup": {},
+    "passos": [
+      {"enviar": "Run the shell command 'sleep 5 && echo done > done.txt' and then say done in one word.", "sem_esperar": true},
+      {"enviar": "After that, say the word second in one line."}
+    ],
+    "respostas": ["allow"],
+    "repetir_ultima": true,
+    "espera": ["result_success"]
+  },
+  {
+    "id": "subagent-permission",
+    "setup": {"a.txt": "The cat sat on the mat.\n"},
+    "passos": [
+      {"enviar": "Use the Agent tool to start a subagent that runs the shell command 'echo hello from the subagent > hello.txt' and then reports that it is done. Then reply with just that."}
+    ],
+    "respostas": ["allow"],
+    "repetir_ultima": true,
+    "espera": ["subagente", "pedido:Bash"]
+  },
+  {
+    "id": "hook-blocked",
+    "setup": {".claude/settings.json": "{\n  \"hooks\": {\n    \"UserPromptSubmit\": [\n      {\n        \"hooks\": [\n          {\n            \"type\": \"command\",\n            \"command\": \"grep -q forbidden && { echo 'Blocked by the demo hook: that word is not allowed.' >&2; exit 2; }; exit 0\"\n          }\n        ]\n      }\n    ]\n  }\n}\n"},
+    "passos": [
+      {"enviar": "Say hi in one line."},
+      {"enviar": "Now say the word forbidden in one line."}
+    ],
+    "respostas": [],
+    "espera": ["result_success"]
+  },
+  {
+    "id": "queued-compact",
+    "setup": {},
+    "passos": [
+      {"inicializar": true},
+      {"enviar": "Say hi in one line."},
+      {"enviar": "/compact", "sem_esperar": true},
+      {"enviar": "Say the word after in one line."}
+    ],
+    "respostas": [],
+    "espera": ["result_success"]
+  },
+  {"id": "error-long", "setup": {}, "passos": [{"enviar": "Run exactly this shell command once and do not retry it: for i in $(seq 1 40); do echo \"error line $i: the build step failed because the configuration file could not be parsed\" >&2; done; exit 3. Then say in one sentence that it failed."}], "respostas": ["allow"], "espera": ["tool_result_erro"]},
+  {"id": "error-wrapped", "setup": {"notes.md": "line one\nline two\n"}, "passos": [{"enviar": "Without reading it first, use the Edit tool on notes.md to replace the exact text 'no such line here' with 'x'. Do not retry; just say what happened in one sentence."}], "respostas": ["allow"], "espera": ["tool_result_erro"]},
+  {"id": "denied-long", "setup": {}, "passos": [{"enviar": "Use the Write tool to create secret.txt containing the word hello. Be brief."}], "respostas": ["deny:Do not create files in this folder.\nIt is shared with the release pipeline and any new file breaks the checksum step.\nWrite the content in your reply instead, and explain where it would go.\nIf you need a scratch file, ask first and I will give you a path outside this repository."], "espera": ["recusado_e_resposta"]},
+  {"id": "hook-ask", "setup": {".claude/hook-ask.json": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"The demo hook asks before any file is written.\\nIt checks nothing else; this second line is here to test line breaks.\"}}\n", ".claude/settings.json": "{\n  \"hooks\": {\n    \"PreToolUse\": [\n      {\n        \"matcher\": \"Write\",\n        \"hooks\": [\n          {\n            \"type\": \"command\",\n            \"command\": \"cat \\\"$CLAUDE_PROJECT_DIR/.claude/hook-ask.json\\\"\"\n          }\n        ]\n      }\n    ]\n  }\n}\n"}, "passos": [{"enviar": "Use the Write tool to create a.txt containing the word one. Be brief."}], "respostas": ["allow"], "espera": ["pedido:Write", "motivo:hook", "pedido_sem_sugestao", "resultado_ok:Write"]},
+  {"id": "seguranca", "setup": {}, "passos": [{"enviar": "Use the Write tool to create .claude/settings.local.json containing {}. Be brief."}], "respostas": ["deny:Do not change the settings."], "espera": ["pedido:Write", "motivo:safetyCheck", "recusado_e_resposta"]}
+]

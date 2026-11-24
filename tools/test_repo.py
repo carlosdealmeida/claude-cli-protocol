@@ -221,8 +221,16 @@ class Workflows(unittest.TestCase):
     def test_ci_runs_what_the_docs_tell_a_contributor_to_run(self):
         ci = read(".github/workflows/ci.yml")
         for command in ("dotnet build libs/dotnet -c Release", "dotnet test libs/dotnet -c Release --no-build",
-                        "tools/check_package.py", "tools/test_repo.py", "npm run build", "npm run check"):
+                        "tools/check_package.py", "tools/test_repo.py", "tools/test_gravar.py",
+                        "docs/test_sweep_issues.py", "npm run build", "npm run check"):
             self.assertIn(command, ci)
+
+    def test_the_fixtures_workflow_records_and_writes_the_expected_results_too(self):
+        # a pull request with new recordings and old expected files would only fail the conformance tests
+        text = read(".github/workflows/fixtures.yml")
+        for needed in ("tools/gravar.py --todos --saida fixtures", "CCP_UPDATE_EXPECTED", "ConformanceTests",
+                       "claude --version", "git add fixtures"):
+            self.assertIn(needed, text)
 
 
 class ReviewFindings(unittest.TestCase):

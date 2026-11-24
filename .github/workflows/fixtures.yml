@@ -28,13 +28,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # The recorder arrives in phase 2. Until then, and whenever the secret is missing, the job says
-      # so and ends without an error.
+      # Without the secret (or without the recorder), the job says so and ends without an error.
       - name: Is there a recorder and a key?
         id: guard
         run: |
           if [ ! -f tools/gravar.py ]; then
-            echo "::notice::tools/gravar.py is not in the repository yet (it arrives in phase 2): nothing was recorded."
+            echo "::notice::tools/gravar.py is not in the repository: nothing was recorded."
             echo "run=false" >> "$GITHUB_OUTPUT"
           elif [ "$HAS_API_KEY" != "true" ]; then
             echo "::notice::The secret ANTHROPIC_API_KEY is not set: nothing was recorded."
@@ -64,6 +63,24 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python -I tools/gravar.py --todos --saida fixtures
+
+      - uses: actions/setup-dotnet@v6
+        if: steps.guard.outputs.run == 'true'
+        with:
+          dotnet-version: |
+            6.0.x
+            8.0.x
+
+      # The expected results go with the recordings. The library writes them again (those tests fail on
+      # purpose while they write), then the conformance and the privacy tests must pass on the new files:
+      # a recording with private data in it never reaches a pull request.
+      - name: Write the expected results again and check the recordings
+        if: steps.guard.outputs.run == 'true'
+        run: |
+          dotnet build libs/dotnet -c Release
+          CCP_UPDATE_EXPECTED=1 dotnet test libs/dotnet -c Release --no-build --framework net6.0 --filter "FullyQualifiedName~ConformanceTests" || true
+          dotnet build libs/dotnet -c Release
+          dotnet test libs/dotnet -c Release --no-build --framework net6.0 --filter "FullyQualifiedName~ConformanceTests|FullyQualifiedName~FixturePrivacyTests"
 
       # A pull request opened with GITHUB_TOKEN does not start other workflows: run the CI on it by hand
       # (close and reopen it, or push an empty commit) before merging.
