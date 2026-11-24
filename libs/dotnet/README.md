@@ -23,7 +23,8 @@ run against a real one yet. Follow the
   JSON line for the stdin of `claude`.
 - **Transport:** `IClaudeTransport` carries lines one way and commands the other.
   `ProcessTransport` starts the `claude` of this machine, with a checked command line, and ends its
-  process tree when disposed. `ReplayTransport` plays a recording.
+  process tree when disposed (on .NET 6 or later, and on Windows; a .NET Standard 2.0 consumer on
+  another system ends only the claude itself). `ReplayTransport` plays a recording.
 - **Session:** `ClaudeSession` reads a transport into events and keeps the state the lines tell:
   busy, pending permission requests, session id, confirmed mode and model.
 
@@ -60,10 +61,15 @@ await foreach (var e in session.ReadEventsAsync())
 }
 ```
 
+`ReadEventsAsync` is read once per session. The example leaves the loop at the end of the first
+turn; an application keeps the same loop for the whole conversation and sends each new message
+from it or from another thread.
+
 `ProcessTransportOptions` takes the folder, the permission mode (`plan`, `default`, `acceptEdits`
 or `auto`), a session to resume, the model, the effort and extra environment variables
 (`CLAUDE_CONFIG_DIR` selects the account). Every value that reaches the command line is checked
-before anything starts. The claude's stderr is read and dropped; `ExitCode` tells how it ended.
+before anything starts, and a permission mode asked for later goes through the same list. The
+path of the claude, when given, must be absolute. The claude's stderr is read and dropped; `ExitCode` tells how it ended.
 There is a complete console chat in
 [examples/dotnet-console](https://github.com/carlosdealmeida/claude-cli-protocol/tree/master/examples/dotnet-console).
 

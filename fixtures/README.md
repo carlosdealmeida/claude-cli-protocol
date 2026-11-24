@@ -110,8 +110,12 @@ CCP_UPDATE_EXPECTED=1 dotnet test libs/dotnet -c Release --framework net6.0 --fi
 ## Privacidade
 
 Uma gravação é uma sessão de verdade. Nenhuma entra aqui com dado pessoal de quem gravou: nome de
-usuário, pastas, e-mail ou credencial. O gravador troca tudo isso por valores de demonstração, e o
-teste de privacidade (`FixturePrivacyTests`, em `libs/dotnet/tests/`) confere cada arquivo.
+usuário, pastas, e-mail ou credencial. O gravador troca a pasta, a home e o nome do usuário pelos de
+`demo` e deixa, na linha `system/init` e nas respostas de controle, só os campos conhecidos. O teste
+de privacidade (`FixturePrivacyTests`, em `libs/dotnet/tests/`) confere cada arquivo: procura uma
+pasta de usuário que não seja a de `demo`, o que pareça uma credencial (chave da Anthropic, token do
+GitHub) e um endereço de e-mail. Nenhum dos dois entende o texto da conversa: leia a gravação antes
+de mandar.
 
 Para o teste procurar também as suas próprias palavras (seu usuário, sua empresa, suas pastas),
 escreva uma por linha em `libs/dotnet/tests/private-words.txt`. O git ignora esse arquivo.
@@ -141,10 +145,14 @@ gravado.
 
 ## Regravação semanal
 
-O workflow `.github/workflows/fixtures.yml` roda toda segunda-feira: grava todos os cenários com o
-`claude` mais novo, escreve os resultados esperados de novo, roda os testes de conformidade e de
-privacidade sobre os arquivos novos e, se algo mudou, abre um pull request com as gravações e os
-esperados juntos. Assim uma mudança do CLI aparece aqui antes de aparecer em uso.
+O workflow `.github/workflows/fixtures.yml` roda toda segunda-feira, em dois jobs. O primeiro grava,
+com o `claude` mais novo, os cenários que já têm gravação, escreve os resultados esperados de novo e
+roda os testes de conformidade e de privacidade sobre os arquivos novos; ele não tem permissão de
+escrita no repositório. O segundo abre um pull request com as gravações e os esperados juntos, e não
+roda o `claude`. Os ids de sessão e de mensagem mudam a cada gravação, então há um pull request por
+semana. Os esperados são escritos pela própria lib, e por isso o teste de conformidade só diz que os
+arquivos estão inteiros: quem lê o pull request é que vê se um evento sumiu. Assim uma mudança do
+CLI aparece aqui antes de aparecer em uso.
 
 **Ele nunca rodou até o fim.** Depende do secret `ANTHROPIC_API_KEY` no repositório; sem ele, o
 workflow avisa e termina sem gravar. As gravações de hoje foram feitas à mão, com quatro versões do

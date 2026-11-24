@@ -403,3 +403,36 @@ Achados na leitura do código, com a resposta do dono do projeto a cada um.
     segundo plano do transporte, e o fim do processo vem do evento `Exited`. Achado em teste: com as
     leituras em threads do pool, cada `claude` em execução prendia três delas pela vida inteira, e
     numa máquina de 4 núcleos dois transportes vivos já deixavam o resto do programa esperando.
+
+## Decidido em 2026-11-24 (revisão da fase 2)
+
+19. **Descartar durante a partida não deixa processo.** O `Start` confere de novo depois de subir o
+    `claude`: se o transporte foi descartado nesse meio-tempo, ele encerra a árvore e levanta
+    `ObjectDisposedException`. Sem isso, fechar uma conversa enquanto ela abre deixava um `claude`
+    vivo que ninguém mais conhecia.
+20. **Partida que falha fecha o transporte.** Depois de um `Start` que levantou exceção, uma leitura
+    devolve nulo em vez de esperar por um `claude` que não subiu.
+21. **A decisão 16 vale também para o transporte.** A exceção de um assinante do `StateChanged` do
+    `ProcessTransport` é descartada, e os outros assinantes são avisados. O `Open` é avisado com o
+    `initialize` já na frente do que um assinante mandar, e antes de o fim ser vigiado, então o
+    `Closed` nunca vem primeiro.
+22. **O modo pedido em uso passa pela mesma lista.** Um `SetPermissionMode` com um modo fora de
+    `plan`, `default`, `acceptEdits` e `auto` levanta `ArgumentException` no `ProcessTransport` e
+    nada é escrito.
+23. **Pedido de permissão que o parser não lê recebe erro.** Sem nome de ferramenta não há evento, e
+    ninguém poderia responder; o transporte responde com erro para o `claude` não esperar para
+    sempre.
+24. **O caminho do `claude` é absoluto.** Um `ClaudePath` relativo é recusado na criação do
+    transporte: um nome solto seria procurado na pasta atual, o que a decisão 17 proíbe.
+25. **O cancelamento alcança a espera, não a escrita.** O token do `SendAsync` cancela a espera pela
+    vez de escrever, que dura enquanto um `claude` que parou de ler segura uma escrita anterior. Uma
+    escrita começada vai até o fim: meia linha quebraria o stream.
+26. **Limites conhecidos do `ProcessTransport`.** No `netstandard2.0` fora do Windows só o `claude` é
+    encerrado, não os filhos. O `ClaudeLocator` não confere o bit de execução. Enquanto um filho
+    órfão segurar o stdout, a thread de leitura continua viva, mas nenhuma linha é entregue depois
+    do fim.
+27. **A regravação semanal tem dois jobs.** O que roda o `claude` de verdade não tem permissão de
+    escrita no repositório; o que abre o pull request não roda o `claude`. Só os cenários que já têm
+    gravação são regravados. Os resultados esperados são reescritos pela própria lib, então o que
+    barra uma gravação ruim é a leitura do pull request por uma pessoa, junto com as esperas do
+    gravador e o teste de privacidade (pasta de outro usuário, credencial, e-mail).

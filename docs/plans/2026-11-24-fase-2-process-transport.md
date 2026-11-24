@@ -1,5 +1,9 @@
 # Fase 2: o transporte que sobe o `claude` — Implementation Plan
 
+> **Nota de 2026-11-24.** Onde este plano e a spec divergem (as decisões 11 a 27, tomadas durante a
+> execução e a revisão), vale a spec. Um exemplo: o `DisposeAsync` encerra a árvore na hora, sem
+> fechar o stdin e esperar antes.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** A lib passa a subir o `claude -p` e a falar com ele: o `ProcessTransport`, um exemplo de console que conversa de verdade, e o gravador das fixtures com a regravação semanal pronta para rodar.
