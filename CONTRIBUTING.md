@@ -16,6 +16,9 @@ cd site && npm ci && npm run build && npm run check && cd ..
 
 # A estrutura do repositório: arquivos, traduções, links e workflows
 python -I tools/test_repo.py -v
+
+# As páginas da especificação contra as gravações
+python -I tools/test_site_spec.py -v
 ```
 
 O teste de estrutura usa só a biblioteca padrão do Python. Os testes que leem YAML precisam do

@@ -94,3 +94,6 @@ jobs:
 
       # the sanitizer of the fixture recorder; recording itself needs a real claude and is not done here
       - run: python -I tools/test_gravar.py
+
+      # the pages of the specification against the recordings
+      - run: python -I tools/test_site_spec.py -v

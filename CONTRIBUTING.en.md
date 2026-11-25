@@ -16,6 +16,9 @@ cd site && npm ci && npm run build && npm run check && cd ..
 
 # The shape of the repository: files, translations, links and workflows
 python -I tools/test_repo.py -v
+
+# The pages of the specification against the recordings
+python -I tools/test_site_spec.py -v
 ```
 
 The structure test uses only Python's standard library. The tests that read YAML need PyYAML
