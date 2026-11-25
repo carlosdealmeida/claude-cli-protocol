@@ -119,8 +119,9 @@ namespace ClaudeCliProtocol.Tests
                 FixtureFiles.Scenarios);
             foreach (var scenario in FixtureFiles.Scenarios)
             {
-                AssertValidJsonLines(scenario + ".stream", FixtureFiles.StreamLines(scenario));
-                AssertValidJsonLines(scenario + ".transcript", FixtureFiles.TranscriptLines(scenario));
+                AssertValidJsonLines(scenario + ".stream", FixtureFiles.StreamLines(scenario), 3);
+                // a message and its reply: the model does not always write a thinking block before it
+                AssertValidJsonLines(scenario + ".transcript", FixtureFiles.TranscriptLines(scenario), 2);
             }
         }
 
@@ -329,9 +330,9 @@ namespace ClaudeCliProtocol.Tests
             }
         }
 
-        private static void AssertValidJsonLines(string name, string[] lines)
+        private static void AssertValidJsonLines(string name, string[] lines, int fewest)
         {
-            Assert.True(lines.Length >= 3, name + " has fewer than 3 lines");
+            Assert.True(lines.Length >= fewest, name + " has fewer than " + fewest + " lines");
             foreach (var line in lines)
             {
                 using (var doc = JsonDocument.Parse(line))

@@ -717,10 +717,23 @@ def re_extrair_historico(saida, projetos=None, temp=None, home=None, usuario=Non
     return ok
 
 
+def nome_curto(caminho):
+    """The 8.3 short spelling of an existing Windows path (C:\\Users\\RUNNER~1); the path itself elsewhere."""
+    if os.name != "nt":
+        return caminho
+    import ctypes
+    saida = ctypes.create_unicode_buffer(1024)
+    tamanho = ctypes.windll.kernel32.GetShortPathNameW(caminho, saida, 1024)
+    return saida.value if 0 < tamanho < 1024 else caminho
+
+
 def trocas_da_gravacao(pasta, home, usuario):
-    """Replacements for a recording made in `pasta` (with and without resolving the folder)."""
+    """Replacements for a recording made in `pasta`: the folder and the home resolved, as given and in their
+    8.3 short spelling. The claude writes paths under TEMP, and a GitHub runner's TEMP is spelled with the
+    short name of the home (C:\\Users\\RUNNER~1\\AppData\\Local\\Temp)."""
     troca = montar_trocas(os.path.realpath(pasta), home, usuario)
-    troca += [p for p in montar_trocas(pasta, home, "") if p not in troca]
+    for outra_pasta, outra_home in ((pasta, home), (nome_curto(pasta), nome_curto(home))):
+        troca += [p for p in montar_trocas(outra_pasta, outra_home, "") if p not in troca]
     troca.sort(key=lambda p: len(p[0]), reverse=True)
     return troca
 

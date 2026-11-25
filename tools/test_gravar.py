@@ -468,14 +468,6 @@ def test_ambiente_adds_variables_to_the_child_environment_only():
     assert gravar.ambiente_do_cenario({}, base) == base
 
 
-def _nome_curto(caminho):
-    """The 8.3 name of a Windows path (like RUNNER~1 for runneradmin), or the path itself where there is none."""
-    import ctypes
-    saida = ctypes.create_unicode_buffer(1024)
-    tamanho = ctypes.windll.kernel32.GetShortPathNameW(caminho, saida, 1024)
-    return saida.value if 0 < tamanho < 1024 else caminho
-
-
 def test_recording_folder_has_no_short_name():
     # With a TEMP that has a short name in it (RUNNER~1, as on a GitHub runner), the claude asks about every
     # write with a safety reason ("suspicious Windows path pattern"), which takes the place of the reason the
@@ -484,7 +476,7 @@ def test_recording_folder_has_no_short_name():
         return
     import tempfile
     longa = os.path.realpath(tempfile.mkdtemp(prefix="pasta-de-nome-bem-comprido-"))
-    curta = _nome_curto(longa)
+    curta = gravar.nome_curto(longa)
     if "~" not in curta:
         print("     (this volume makes no short names: nothing to check)")
         return
@@ -492,6 +484,26 @@ def test_recording_folder_has_no_short_name():
     assert os.path.isdir(pasta)
     assert "~" not in pasta, pasta
     assert pasta == os.path.join(longa, "cvc-demo", "edit-20261124-000000"), pasta
+
+
+def test_short_name_of_the_home_is_replaced_too():
+    # On a GitHub runner the home is C:\Users\runneradmin and TEMP is C:\Users\RUNNER~1\AppData\Local\Temp:
+    # the claude writes paths under TEMP (its image cache), so the short spelling of the home reaches the
+    # recordings and must be replaced like the long one.
+    if os.name != "nt":
+        return
+    import tempfile
+    home = os.path.realpath(tempfile.mkdtemp(prefix="home-de-nome-bem-comprido-"))
+    curta = gravar.nome_curto(home)
+    if "~" not in curta:
+        print("     (this volume makes no short names: nothing to check)")
+        return
+    pasta = gravar.pasta_da_gravacao(home, "image", "20261124-000000")
+    troca = gravar.trocas_da_gravacao(pasta, home, "")
+    texto = json.dumps({"file_path": curta + "\\AppData\\Local\\Temp\\claude\\x.png", "slug": gravar._slug(curta) + "-x"})
+    limpo = gravar._trocar_texto(texto, troca)
+    assert "~" not in limpo, limpo
+    assert gravar.DEMO_HOME.replace("\\", "\\\\") + "\\\\AppData" in limpo, limpo
 
 
 if __name__ == "__main__":
