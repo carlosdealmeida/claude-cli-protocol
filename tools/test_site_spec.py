@@ -19,10 +19,19 @@ import re
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SPEC = os.path.join(ROOT, "site", "src", "content", "docs", "spec")
+DOCS = os.path.join(ROOT, "site", "src", "content", "docs")
+SPEC = os.path.join(DOCS, "spec")
+# the heading of the section of the unrecorded events, per locale folder ("" is Portuguese, at the root)
+UNRECORDED_SECTIONS = {
+    "": "## Os que nenhuma gravação exercita",
+    "en": "## The ones no recording exercises",
+    "es": "## Los que ninguna grabación ejercita",
+    "zh-cn": "## 没有任何录制覆盖的事件",
+    "zh-tw": "## 沒有任何錄製涵蓋的事件",
+}
+SLUGS = ("protocolo", "comandos", "controle", "transporte", "eventos", "fixtures")
 FIXTURES = os.path.join(ROOT, "fixtures")
 ELLIPSIS = "…"
-UNRECORDED_SECTION = "## Os que nenhuma gravação exercita"
 SESSION_EVENTS = {"control_replied"}
 
 BLOCK = re.compile(r"<!--\s*(fixture:\s*(?P<file>[^:\s]+):(?P<line>\d+)|stdin)\s*-->\s*\n```json\n(?P<body>.*?)\n```",
@@ -74,8 +83,15 @@ def difference(example, actual, path="$"):
     return None if example == actual else path
 
 
+def spec_folder(locale):
+    return os.path.join(DOCS, locale, "spec") if locale else SPEC
+
+
 def pages():
-    return sorted(glob.glob(os.path.join(SPEC, "*.md")))
+    found = []
+    for locale in UNRECORDED_SECTIONS:
+        found += sorted(glob.glob(os.path.join(spec_folder(locale), "*.md")))
+    return found
 
 
 def expected_events():
@@ -87,17 +103,25 @@ def expected_events():
 
 
 class SpecPages(unittest.TestCase):
-    def test_the_six_pages_exist(self):
-        names = {os.path.basename(p) for p in pages()}
-        for slug in ("protocolo", "comandos", "controle", "transporte", "eventos", "fixtures"):
-            self.assertIn(slug + ".md", names)
+    def test_the_six_pages_exist_in_every_locale(self):
+        for locale in UNRECORDED_SECTIONS:
+            for slug in SLUGS:
+                self.assertTrue(os.path.exists(os.path.join(spec_folder(locale), slug + ".md")), (locale, slug))
+
+    def test_a_translation_has_the_same_marked_blocks_as_the_portuguese(self):
+        for slug in SLUGS:
+            source = BLOCK.findall(read(os.path.join(SPEC, slug + ".md")))
+            for locale in UNRECORDED_SECTIONS:
+                if locale:
+                    self.assertEqual(source, BLOCK.findall(read(os.path.join(spec_folder(locale), slug + ".md"))),
+                                     (locale, slug))
 
     def test_every_marked_block_is_what_it_says(self):
         count = 0
         for page in pages():
             for match in BLOCK.finditer(read(page)):
                 count += 1
-                where = "%s: %s" % (os.path.basename(page), match.group(0).split("\n")[0])
+                where = "%s: %s" % (os.path.relpath(page, DOCS), match.group(0).split("\n")[0])
                 body = match.group("body")
                 example = json.loads(body)
                 if match.group("file") is None:
@@ -113,8 +137,12 @@ class SpecPages(unittest.TestCase):
                 json.loads(body)
 
     def test_the_tables_of_events_give_the_fields_of_the_expected_results(self):
-        text = read(os.path.join(SPEC, "eventos.md"))
-        before, _, rest = text.partition(UNRECORDED_SECTION)
+        for locale, section in UNRECORDED_SECTIONS.items():
+            with self.subTest(locale=locale or "pt-BR"):
+                self.check_events(read(os.path.join(spec_folder(locale), "eventos.md")), section)
+
+    def check_events(self, text, section):
+        before, _, rest = text.partition(section)
         self.assertTrue(rest, "the page has no section of the unrecorded events")
         unrecorded_part, heading, after = rest.partition("\n## ")
         recorded_part = before + heading + after
