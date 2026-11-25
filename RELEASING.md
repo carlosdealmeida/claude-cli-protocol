@@ -25,11 +25,9 @@ O que já rodou no GitHub:
   Release tem o `.nupkg` e o `.snupkg`, e o pacote `ClaudeCliProtocol` 0.1.0 está no nuget.org.
 - **`pages.yml`: passou** depois que o Pages foi ligado. O site está em
   <https://carlosdealmeida.github.io/claude-cli-protocol/>.
-- **`fixtures.yml`: rodou uma vez com o `claude` de verdade e não chegou ao pull request.** Ele
-  gravou os cenários, e o `hook-ask` não atendeu às esperas do roteiro: o pedido de permissão veio
-  com um motivo de segurança no lugar do motivo do hook, porque a pasta temporária do runner tem um
-  nome curto do Windows (`RUNNER~1`). O gravador passou a usar o caminho longo; o workflow não rodou
-  de novo depois disso, e o job que abre o pull request nunca rodou.
+- **`fixtures.yml`: rodou até o fim em 2026-11-25** e abriu o pull request com as gravações novas,
+  depois de três rodadas que acharam problemas no gravador (veja `fixtures/README.md`). As
+  gravações entraram, menos as do cenário `image`.
 
 ## Fazer um release
 

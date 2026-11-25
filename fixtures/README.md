@@ -155,11 +155,11 @@ semana. Os esperados são escritos pela própria lib, e por isso o teste de conf
 arquivos estão inteiros: quem lê o pull request é que vê se um evento sumiu. Assim uma mudança do
 CLI aparece aqui antes de aparecer em uso.
 
-**Ele ainda não abriu nenhum pull request.** Depende do secret `ANTHROPIC_API_KEY` no repositório;
-sem ele, o workflow avisa e termina sem gravar. Na primeira rodada com a chave, em 2026-11-24, ele
-gravou os cenários e parou no `hook-ask`, que não atendeu às esperas do roteiro. A causa: a pasta
-temporária do runner tem um nome curto do Windows (`RUNNER~1`), e o `claude` pede permissão para
-escrever num caminho assim com um motivo de segurança (`safetyCheck`), que toma o lugar do motivo do
-hook. O gravador passou a usar o caminho longo da pasta; o workflow ainda não rodou de novo depois
-disso. As gravações de hoje foram feitas à mão, com quatro versões do `claude` (2.1.286, 2.1.310,
-2.1.323 e 2.1.329).
+**Ele rodou até o fim pela primeira vez em 2026-11-25**, depois de três rodadas que acharam
+problemas no gravador: a pasta temporária do runner tem um nome curto do Windows (`RUNNER~1`), que o
+`claude` trata como caminho suspeito e que escapava das trocas da home; e um endereço de e-mail
+apareceu uma vez na gravação do `queued-compact`, provavelmente num texto do modelo (a causa não foi
+confirmada; o teste de privacidade agora diz em que linha e em que campo achou, sem mostrar o
+valor). As gravações daquela rodada entraram, menos as do `image`: nelas o modelo respondeu sem
+abrir a imagem com o `Read`, e a gravação anterior é a única com um resultado de ferramenta que traz
+uma imagem. Hoje 20 cenários são do `claude` 2.1.331 e o `image` é do 2.1.286.
