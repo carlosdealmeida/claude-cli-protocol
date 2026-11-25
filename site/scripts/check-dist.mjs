@@ -13,7 +13,8 @@ const LOCALES = [
   { path: 'zh-cn/', lang: 'zh-CN' },
   { path: 'zh-tw/', lang: 'zh-TW' },
 ];
-const PAGES = ['index.html', 'overview/index.html'];
+const SPEC = ['protocolo', 'comandos', 'controle', 'transporte', 'eventos', 'fixtures'];
+const PAGES = ['index.html', 'overview/index.html', ...SPEC.map((slug) => `spec/${slug}/index.html`)];
 
 const problems = [];
 let pages = 0;
