@@ -118,9 +118,9 @@ saiu dela está em **Itens**, acima.
   a única que fala do formato é a dos escapes `\uXXXX` (2.1.311).
 
 O que a varredura não cobre: ela lê títulos de issue e linhas do CHANGELOG. A forma de cada linha
-só se confirma gravando com o `claude` de verdade. As gravações deste repositório foram feitas com
-quatro versões, pelo que as linhas `system/init` registram: 2.1.286 (a maior parte), 2.1.310,
-2.1.323 e 2.1.329. Nenhuma é da 2.1.331. Regravar é parte da fase 2.
+só se confirma gravando com o `claude` de verdade. Quando esta varredura foi feita, as gravações
+eram de quatro versões (2.1.286, 2.1.310, 2.1.323 e 2.1.329). Na regravação de 2026-11-25, 20 dos
+21 cenários passaram a ser do 2.1.331; o `image` ficou com a gravação do 2.1.286.
 
 ### 2026-11-22
 
