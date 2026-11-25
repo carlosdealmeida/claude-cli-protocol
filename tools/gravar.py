@@ -609,13 +609,23 @@ def localizar_transcript(session_id):
     return achados[0] if achados else None
 
 
+def pasta_da_gravacao(temp, cid, carimbo):
+    """Creates the folder of one recording and gives its path, with no 8.3 short name in it.
+
+    A TEMP like C:\\Users\\RUNNER~1\\AppData\\Local\\Temp (a GitHub runner's) would make the claude ask about
+    every write with a safety reason, "suspicious Windows path pattern", in the place of the reason a
+    scenario is recorded for.
+    """
+    pasta = os.path.join(temp, "cvc-demo", "%s-%s" % (cid, carimbo))
+    os.makedirs(pasta)
+    return os.path.realpath(pasta)
+
+
 def gravar_cenario(cenario, saida, claude=None):
     cid = cenario["id"]
     executavel = localizar_claude(claude)  # before the recording folder exists, so a refusal leaves nothing behind
     carimbo = datetime.now().strftime("%Y%m%d-%H%M%S")
-    temp = os.environ.get("TEMP") or os.path.expanduser("~")
-    pasta = os.path.join(temp, "cvc-demo", "%s-%s" % (cid, carimbo))
-    os.makedirs(pasta)
+    pasta = pasta_da_gravacao(os.environ.get("TEMP") or os.path.expanduser("~"), cid, carimbo)
     for nome, conteudo in (cenario.get("setup") or {}).items():
         destino = os.path.join(pasta, nome)
         os.makedirs(os.path.dirname(destino), exist_ok=True)
@@ -707,10 +717,23 @@ def re_extrair_historico(saida, projetos=None, temp=None, home=None, usuario=Non
     return ok
 
 
+def nome_curto(caminho):
+    """The 8.3 short spelling of an existing Windows path (C:\\Users\\RUNNER~1); the path itself elsewhere."""
+    if os.name != "nt":
+        return caminho
+    import ctypes
+    saida = ctypes.create_unicode_buffer(1024)
+    tamanho = ctypes.windll.kernel32.GetShortPathNameW(caminho, saida, 1024)
+    return saida.value if 0 < tamanho < 1024 else caminho
+
+
 def trocas_da_gravacao(pasta, home, usuario):
-    """Replacements for a recording made in `pasta` (with and without resolving the folder)."""
+    """Replacements for a recording made in `pasta`: the folder and the home resolved, as given and in their
+    8.3 short spelling. The claude writes paths under TEMP, and a GitHub runner's TEMP is spelled with the
+    short name of the home (C:\\Users\\RUNNER~1\\AppData\\Local\\Temp)."""
     troca = montar_trocas(os.path.realpath(pasta), home, usuario)
-    troca += [p for p in montar_trocas(pasta, home, "") if p not in troca]
+    for outra_pasta, outra_home in ((pasta, home), (nome_curto(pasta), nome_curto(home))):
+        troca += [p for p in montar_trocas(outra_pasta, outra_home, "") if p not in troca]
     troca.sort(key=lambda p: len(p[0]), reverse=True)
     return troca
 

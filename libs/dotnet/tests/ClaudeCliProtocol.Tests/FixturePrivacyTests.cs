@@ -84,6 +84,79 @@ namespace ClaudeCliProtocol.Tests
         }
 
         [Fact]
+        public void Where_a_find_is_tells_the_line_and_the_path_and_not_the_value()
+        {
+            var text = "{\"type\":\"system\"}\n{\"type\":\"user\",\"message\":{\"content\":[{\"text\":\"ask some" + "one@example.org\"}]}}\n";
+
+            var where = Where(text, EmailAddress);
+
+            Assert.Equal("line 2 (type user), at message.content[0].text", where);
+            Assert.DoesNotContain("example", where);
+        }
+
+        /// <summary>
+        /// Where the first match of a pattern is, without the match: the line, its type and the JSON path of the
+        /// string that holds it. For a file that is not one JSON object per line, only the line.
+        /// </summary>
+        private static string Where(string text, Regex pattern)
+        {
+            var match = pattern.Match(text);
+            if (!match.Success) return "nowhere";
+            var lines = text.Split('\n');
+            var offset = 0;
+            for (var i = 0; i < lines.Length; i++)
+            {
+                if (match.Index < offset + lines[i].Length + 1)
+                {
+                    var head = "line " + (i + 1);
+                    try
+                    {
+                        using (var doc = JsonDocument.Parse(lines[i]))
+                        {
+                            var type = Str(doc.RootElement, "type");
+                            var path = PathOf(doc.RootElement, pattern, "");
+                            return head + (type != null ? " (type " + type + ")" : "") + (path != null ? ", at " + path.TrimStart('.') : "");
+                        }
+                    }
+                    catch (JsonException)
+                    {
+                        return head;
+                    }
+                }
+                offset += lines[i].Length + 1;
+            }
+            return "somewhere";
+        }
+
+        private static string? PathOf(JsonElement element, Regex pattern, string path)
+        {
+            switch (element.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    foreach (var property in element.EnumerateObject())
+                    {
+                        if (pattern.IsMatch(property.Name)) return path + "." + "(a key)";
+                        var found = PathOf(property.Value, pattern, path + "." + property.Name);
+                        if (found != null) return found;
+                    }
+                    return null;
+                case JsonValueKind.Array:
+                    var index = 0;
+                    foreach (var item in element.EnumerateArray())
+                    {
+                        var found = PathOf(item, pattern, path + "[" + index + "]");
+                        if (found != null) return found;
+                        index++;
+                    }
+                    return null;
+                case JsonValueKind.String:
+                    return pattern.IsMatch(element.GetString() ?? "") ? path : null;
+                default:
+                    return null;
+            }
+        }
+
+        [Fact]
         public void Fixtures_have_no_private_data()
         {
             var files = Directory.GetFiles(FixtureFiles.Directory);
@@ -101,9 +174,9 @@ namespace ClaudeCliProtocol.Tests
 
                 var match = OtherUserFolder.Match(text);
                 Assert.False(match.Success, Path.GetFileName(file) + " has a user folder other than 'demo'");
-                // what was found is not shown: this message goes to a public log
-                Assert.False(Credential.IsMatch(text), Path.GetFileName(file) + " has what looks like a credential");
-                Assert.False(EmailAddress.IsMatch(text), Path.GetFileName(file) + " has an e-mail address");
+                // what was found is not shown, only where: this message goes to a public log
+                Assert.False(Credential.IsMatch(text), Path.GetFileName(file) + " has what looks like a credential, " + Where(text, Credential));
+                Assert.False(EmailAddress.IsMatch(text), Path.GetFileName(file) + " has an e-mail address, " + Where(text, EmailAddress));
             }
         }
 
@@ -119,8 +192,9 @@ namespace ClaudeCliProtocol.Tests
                 FixtureFiles.Scenarios);
             foreach (var scenario in FixtureFiles.Scenarios)
             {
-                AssertValidJsonLines(scenario + ".stream", FixtureFiles.StreamLines(scenario));
-                AssertValidJsonLines(scenario + ".transcript", FixtureFiles.TranscriptLines(scenario));
+                AssertValidJsonLines(scenario + ".stream", FixtureFiles.StreamLines(scenario), 3);
+                // a message and its reply: the model does not always write a thinking block before it
+                AssertValidJsonLines(scenario + ".transcript", FixtureFiles.TranscriptLines(scenario), 2);
             }
         }
 
@@ -329,9 +403,9 @@ namespace ClaudeCliProtocol.Tests
             }
         }
 
-        private static void AssertValidJsonLines(string name, string[] lines)
+        private static void AssertValidJsonLines(string name, string[] lines, int fewest)
         {
-            Assert.True(lines.Length >= 3, name + " has fewer than 3 lines");
+            Assert.True(lines.Length >= fewest, name + " has fewer than " + fewest + " lines");
             foreach (var line in lines)
             {
                 using (var doc = JsonDocument.Parse(line))
