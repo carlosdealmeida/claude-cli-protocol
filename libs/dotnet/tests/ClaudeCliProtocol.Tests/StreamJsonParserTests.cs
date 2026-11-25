@@ -235,7 +235,7 @@ namespace ClaudeCliProtocol.Tests.Protocol
         public void Can_use_tool_gives_permission_requested()
         {
             var parser = new StreamJsonParser();
-            var line = FixtureFiles.StreamLines("edit").First(l => l.Contains("can_use_tool"));
+            var line = Sample("edit.can_use_tool");
 
             var ev = Assert.IsType<PermissionRequested>(Assert.Single(parser.Parse(line)));
 
@@ -532,10 +532,37 @@ namespace ClaudeCliProtocol.Tests.Protocol
         private static string Line(string scenario, string contains) =>
             FixtureFiles.StreamLines(scenario).First(l => l.Contains(contains));
 
+        /// <summary>A recorded line frozen in Samples/, for a test that checks its values one by one.</summary>
+        private static string Sample(string name) =>
+            System.IO.File.ReadAllText(System.IO.Path.Combine(System.AppContext.BaseDirectory, "Samples", name + ".json")).Trim();
+
+        /// <summary>Each sample, the recording it came from and how to find a line of its kind there.</summary>
+        public static readonly TheoryData<string, string, string> Samples = new TheoryData<string, string, string>
+        {
+            { "commands.init-1", "commands", "\"request_id\": \"init-1\"" },
+            { "commands.context-2", "commands", "\"request_id\": \"context-2\"" },
+            { "commands.compact_boundary", "commands", "\"subtype\": \"compact_boundary\"" },
+            { "effort.settings-1", "effort", "\"request_id\": \"settings-1\"" },
+            { "edit.can_use_tool", "edit", "\"can_use_tool\"" },
+        };
+
+        [Theory]
+        [MemberData(nameof(Samples))]
+        public void The_recordings_still_have_a_line_of_each_sample(string sample, string scenario, string contains)
+        {
+            // the values change with each recording; the kind of line and the events it gives must not
+            var parser = new StreamJsonParser();
+            var frozen = parser.Parse(Sample(sample)).Select(e => e.GetType()).ToArray();
+            var current = new StreamJsonParser().Parse(Line(scenario, contains)).Select(e => e.GetType()).ToArray();
+
+            Assert.NotEmpty(frozen);
+            Assert.Equal(frozen.Distinct().OrderBy(t => t.Name), current.Distinct().OrderBy(t => t.Name));
+        }
+
         [Fact]
         public void Initialize_response_lists_commands_and_models()
         {
-            var events = new StreamJsonParser().Parse(Line("commands", "\"request_id\": \"init-1\""));
+            var events = new StreamJsonParser().Parse(Sample("commands.init-1"));
 
             Assert.IsType<ControlAcknowledged>(events[0]);
             var commands = events.OfType<CommandsAvailable>().Single().Commands;
@@ -571,7 +598,7 @@ namespace ClaudeCliProtocol.Tests.Protocol
             Assert.Equal(new SettingsApplied("claude-sonnet-5-5", "high", true), high.OfType<SettingsApplied>().Single());
             Assert.IsType<ControlAcknowledged>(high[0]);
 
-            var recorded = parser.Parse(Line("effort", "\"request_id\": \"settings-1\""));
+            var recorded = parser.Parse(Sample("effort.settings-1"));
             Assert.Equal(new SettingsApplied("claude-haiku-4-5-20251001", null, true), recorded.OfType<SettingsApplied>().Single());
 
             var noKey = parser.Parse(Control("{\"applied\":{\"model\":\"m\"}}"));
@@ -610,7 +637,7 @@ namespace ClaudeCliProtocol.Tests.Protocol
         [Fact]
         public void Context_usage_response()
         {
-            var events = new StreamJsonParser().Parse(Line("commands", "\"request_id\": \"context-2\""));
+            var events = new StreamJsonParser().Parse(Sample("commands.context-2"));
 
             var usage = events.OfType<ContextUsageReported>().Single().Usage;
             Assert.Equal(18, usage.Percentage);
@@ -742,7 +769,7 @@ namespace ClaudeCliProtocol.Tests.Protocol
         [Fact]
         public void A_compact_boundary_brings_its_trigger_and_tokens()
         {
-            var notice = Assert.IsType<SystemNotice>(Assert.Single(new StreamJsonParser().Parse(Line("commands", "\"subtype\": \"compact_boundary\""))));
+            var notice = Assert.IsType<SystemNotice>(Assert.Single(new StreamJsonParser().Parse(Sample("commands.compact_boundary"))));
             Assert.Equal("compact_boundary", notice.Subtype);
             Assert.Equal("manual", notice.Trigger);
             Assert.Equal(36326, notice.PreTokens);

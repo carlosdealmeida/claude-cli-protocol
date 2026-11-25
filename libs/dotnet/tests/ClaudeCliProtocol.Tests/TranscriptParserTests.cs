@@ -95,7 +95,9 @@ namespace ClaudeCliProtocol.Tests.Protocol
             var caveat = events.OfType<UserBlock>().Single(
                 u => u.Block is TextContentBlock t && t.Text.StartsWith("<local-command-caveat>"));
             Assert.True(caveat.IsMeta);
-            Assert.DoesNotContain(events.OfType<UserBlock>(), u => u.Block is TextContentBlock t && t.Text.Contains("<command-name>"));
+            // the summary of a /compact is the model's own text, and it may quote the tags of a command
+            Assert.DoesNotContain(events.OfType<UserBlock>(),
+                u => !u.IsCompactSummary && u.Block is TextContentBlock t && t.Text.Contains("<command-name>"));
 
             var local = TranscriptParser.Parse(
                 "{\"type\":\"system\",\"subtype\":\"local_command\",\"content\":\"<local-command-stdout>X</local-command-stdout>\"}");
