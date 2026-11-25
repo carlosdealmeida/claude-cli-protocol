@@ -19,6 +19,8 @@
   <ItemGroup>
     <None Include="..\..\..\..\fixtures\**\*" Exclude="..\..\..\..\fixtures\README.md"
           Link="fixtures\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- the recorded lines frozen for the tests that check values one by one -->
+    <None Include="Samples\*.json" CopyToOutputDirectory="PreserveNewest" />
     <!-- each one's private words for FixturePrivacyTests; git ignores the file -->
     <None Include="..\private-words.txt" Condition="Exists('..\private-words.txt')"
           Link="private-words.txt" CopyToOutputDirectory="PreserveNewest" />
