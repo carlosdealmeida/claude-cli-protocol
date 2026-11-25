@@ -609,13 +609,23 @@ def localizar_transcript(session_id):
     return achados[0] if achados else None
 
 
+def pasta_da_gravacao(temp, cid, carimbo):
+    """Creates the folder of one recording and gives its path, with no 8.3 short name in it.
+
+    A TEMP like C:\\Users\\RUNNER~1\\AppData\\Local\\Temp (a GitHub runner's) would make the claude ask about
+    every write with a safety reason, "suspicious Windows path pattern", in the place of the reason a
+    scenario is recorded for.
+    """
+    pasta = os.path.join(temp, "cvc-demo", "%s-%s" % (cid, carimbo))
+    os.makedirs(pasta)
+    return os.path.realpath(pasta)
+
+
 def gravar_cenario(cenario, saida, claude=None):
     cid = cenario["id"]
     executavel = localizar_claude(claude)  # before the recording folder exists, so a refusal leaves nothing behind
     carimbo = datetime.now().strftime("%Y%m%d-%H%M%S")
-    temp = os.environ.get("TEMP") or os.path.expanduser("~")
-    pasta = os.path.join(temp, "cvc-demo", "%s-%s" % (cid, carimbo))
-    os.makedirs(pasta)
+    pasta = pasta_da_gravacao(os.environ.get("TEMP") or os.path.expanduser("~"), cid, carimbo)
     for nome, conteudo in (cenario.get("setup") or {}).items():
         destino = os.path.join(pasta, nome)
         os.makedirs(os.path.dirname(destino), exist_ok=True)

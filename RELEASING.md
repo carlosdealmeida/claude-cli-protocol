@@ -27,7 +27,9 @@ O que já rodou no GitHub:
   <https://carlosdealmeida.github.io/claude-cli-protocol/>.
 - **`fixtures.yml`: rodou uma vez com o `claude` de verdade e não chegou ao pull request.** Ele
   gravou os cenários, e o `hook-ask` não atendeu às esperas do roteiro: o pedido de permissão veio
-  sem o motivo do hook. A causa não foi apurada. O job que abre o pull request nunca rodou.
+  com um motivo de segurança no lugar do motivo do hook, porque a pasta temporária do runner tem um
+  nome curto do Windows (`RUNNER~1`). O gravador passou a usar o caminho longo; o workflow não rodou
+  de novo depois disso, e o job que abre o pull request nunca rodou.
 
 ## Fazer um release
 

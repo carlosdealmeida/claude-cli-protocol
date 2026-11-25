@@ -123,7 +123,8 @@ escreva uma por linha em `libs/dotnet/tests/private-words.txt`. O git ignora ess
 ## Gravar
 
 O gravador é o `tools/gravar.py`, com o roteiro de cada cenário em `tools/cenarios.json`. Veio do
-Claude Visual Chat (commit `16809aa`) como estava; só a pasta de saída padrão mudou.
+Claude Visual Chat (commit `16809aa`); aqui mudaram a pasta de saída padrão e a pasta de cada
+gravação, que é sempre o caminho longo, sem nome curto do Windows (`RUNNER~1`).
 
 ```bash
 python -I tools/gravar.py edit        # um cenário
@@ -156,6 +157,9 @@ CLI aparece aqui antes de aparecer em uso.
 
 **Ele ainda não abriu nenhum pull request.** Depende do secret `ANTHROPIC_API_KEY` no repositório;
 sem ele, o workflow avisa e termina sem gravar. Na primeira rodada com a chave, em 2026-11-24, ele
-gravou os cenários e parou no `hook-ask`, que não atendeu às esperas do roteiro; a causa não foi
-apurada. As gravações de hoje foram feitas à mão, com quatro versões do `claude` (2.1.286, 2.1.310,
+gravou os cenários e parou no `hook-ask`, que não atendeu às esperas do roteiro. A causa: a pasta
+temporária do runner tem um nome curto do Windows (`RUNNER~1`), e o `claude` pede permissão para
+escrever num caminho assim com um motivo de segurança (`safetyCheck`), que toma o lugar do motivo do
+hook. O gravador passou a usar o caminho longo da pasta; o workflow ainda não rodou de novo depois
+disso. As gravações de hoje foram feitas à mão, com quatro versões do `claude` (2.1.286, 2.1.310,
 2.1.323 e 2.1.329).
