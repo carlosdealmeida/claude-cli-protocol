@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **The specification on the site** (Portuguese first): six pages under `spec/`, for the protocol, the commands, the control requests, the transport, the events and the fixtures. Every example line is a line of a recording or of the stdin writer.
+- `tools/test_site_spec.py`, which checks each example against the recording it names and the table of events against the expected results; CI runs it.
+
 ## [0.1.0] - 2026-11-24
 
 The first release.
