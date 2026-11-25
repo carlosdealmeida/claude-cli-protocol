@@ -13,7 +13,7 @@ namespace ClaudeCliProtocol.Tests
         [Fact]
         public void Read_a_line_the_claude_wrote()
         {
-            var line = FixtureFiles.StreamLines("edit")[0];
+            var line = FixtureFiles.StreamLines("edit").First(l => l.Contains("\"subtype\": \"init\""));
             var names = new List<string>();
 
             // --- README ---

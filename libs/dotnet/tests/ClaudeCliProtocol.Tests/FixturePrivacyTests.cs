@@ -159,7 +159,9 @@ namespace ClaudeCliProtocol.Tests
         [Fact]
         public void Fixtures_have_no_private_data()
         {
-            var files = Directory.GetFiles(FixtureFiles.Directory);
+            // the recordings, and the lines of them frozen for the parser tests
+            var files = Directory.GetFiles(FixtureFiles.Directory)
+                .Concat(Directory.GetFiles(Path.Combine(AppContext.BaseDirectory, "Samples"), "*.json")).ToArray();
             Assert.NotEmpty(files);
             var forbidden = ForbiddenWords().ToList();
             foreach (var file in files)
