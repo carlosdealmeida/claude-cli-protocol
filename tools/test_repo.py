@@ -226,7 +226,7 @@ class Workflows(unittest.TestCase):
     def test_ci_runs_what_the_docs_tell_a_contributor_to_run(self):
         ci = read(".github/workflows/ci.yml")
         for command in ("dotnet build libs/dotnet -c Release", "dotnet test libs/dotnet -c Release --no-build",
-                        "tools/check_package.py", "tools/test_repo.py", "tools/test_gravar.py",
+                        "tools/check_package.py", "tools/test_repo.py", "tools/test_gravar.py", "tools/test_site_spec.py",
                         "docs/test_sweep_issues.py", "npm run build", "npm run check"):
             self.assertIn(command, ci)
 

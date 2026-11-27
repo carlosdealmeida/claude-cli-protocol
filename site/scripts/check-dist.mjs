@@ -13,7 +13,8 @@ const LOCALES = [
   { path: 'zh-cn/', lang: 'zh-CN' },
   { path: 'zh-tw/', lang: 'zh-TW' },
 ];
-const PAGES = ['index.html', 'overview/index.html'];
+const SPEC = ['protocolo', 'comandos', 'controle', 'transporte', 'eventos', 'fixtures'];
+const PAGES = ['index.html', 'overview/index.html', ...SPEC.map((slug) => `spec/${slug}/index.html`)];
 
 const problems = [];
 let pages = 0;
@@ -47,6 +48,29 @@ for (const locale of LOCALES) {
         return existsSync(full) && statSync(full).isFile();
       });
       if (!found) problems.push(`dist/${rel}: dead link: ${href}`);
+    }
+  }
+}
+
+// The links between the pages of the specification are relative (../comandos/#the-encoding): each must lead to
+// a page, and its fragment to a heading of that page. A translated heading has another id, so this is per locale.
+const ids = (file) => new Set([...readFileSync(file, 'utf8').matchAll(/\sid="([^"]*)"/g)].map((m) => m[1]));
+for (const locale of LOCALES) {
+  for (const slug of SPEC) {
+    const rel = `${locale.path}spec/${slug}/index.html`;
+    const file = path.join(DIST, rel);
+    if (!existsSync(file)) continue;
+    const html = readFileSync(file, 'utf8');
+    for (const match of html.matchAll(/\shref="((?:\.\.\/|#)[^"]*)"/g)) {
+      const [target, fragment] = match[1].split('#');
+      const page = target ? path.join(path.dirname(file), target, 'index.html') : file;
+      if (!existsSync(page)) {
+        problems.push(`dist/${rel}: dead link: ${match[1]}`);
+        continue;
+      }
+      if (fragment && !ids(page).has(decodeURIComponent(fragment)) && !ids(page).has(fragment)) {
+        problems.push(`dist/${rel}: no heading for the link: ${match[1]}`);
+      }
     }
   }
 }

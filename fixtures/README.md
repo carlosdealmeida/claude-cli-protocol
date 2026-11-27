@@ -79,10 +79,10 @@ um array importa. Dois números são iguais quando diferem em no máximo `1e-9`,
 inclusive dentro do JSON repassado do `claude`; por isso `1` e `1.0` são iguais. A tolerância
 existe para duas implementações que escrevem o mesmo número com casas diferentes.
 
-**O que este arquivo ainda não dá.** Não há uma tabela de todos os eventos e campos: a forma de
-cada evento está nos próprios arquivos esperados. Os nove eventos que nenhuma gravação exercita
-(lista abaixo) não aparecem neles, e hoje a única descrição da forma deles é o código da lib .NET.
-A especificação da fase 5 cobre isso.
+**A tabela de todos os eventos e campos** está na página
+[Eventos](https://carlosdealmeida.github.io/claude-cli-protocol/spec/eventos/) do site, com os nove
+eventos que nenhuma gravação exercita (lista abaixo) numa seção à parte. O teste
+`tools/test_site_spec.py` confere a tabela contra os arquivos esperados.
 
 ### De onde vêm e o que provam
 

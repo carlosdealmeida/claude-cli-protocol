@@ -21,7 +21,8 @@ o `claude -p` desta máquina: eventos, os dois parsers, comandos, sessão, repla
 `ProcessTransport`. Passa nas 42 gravações de `fixtures/`, nos dois targets. O transporte é testado
 com um `claude` de mentira; contra um `claude` de verdade (2.1.331, no Windows) ele rodou uma vez,
 com uma mensagem curta, num teste que só roda a pedido. O site está em
-<https://carlosdealmeida.github.io/claude-cli-protocol/>.
+<https://carlosdealmeida.github.io/claude-cli-protocol/>, com a especificação do protocolo
+([Protocolo](https://carlosdealmeida.github.io/claude-cli-protocol/spec/protocolo/), [Eventos](https://carlosdealmeida.github.io/claude-cli-protocol/spec/eventos/) e mais quatro páginas).
 
 ## O que tem aqui
 
