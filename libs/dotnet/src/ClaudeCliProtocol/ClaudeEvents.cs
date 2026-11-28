@@ -111,7 +111,7 @@ namespace ClaudeCliProtocol
         public bool IsQueuedCommand { get; init; }
 
         /// <summary>The terminal, browser and selection blocks that came before the text of this message; empty by default.</summary>
-        internal IReadOnlyList<ContextBlock> Context { get; init; } = Array.Empty<ContextBlock>();
+        public IReadOnlyList<ContextBlock> Context { get; init; } = Array.Empty<ContextBlock>();
     }
 
     /// <summary>

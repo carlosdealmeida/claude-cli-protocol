@@ -20,8 +20,19 @@ namespace ClaudeCliProtocol.Tests
         [Fact]
         public void Helpers_stay_internal()
         {
-            foreach (var name in new[] { "LightMarkup", "MarkupElement", "MarkupNode", "ContextBlock", "ContextBlockReader" })
+            foreach (var name in new[] { "LightMarkup", "MarkupElement", "MarkupNode", "ContextBlockReader", "JsonHelpers", "TaskNotificationText" })
                 Assert.DoesNotContain("ClaudeCliProtocol." + name, Names);
+        }
+
+        [Fact]
+        public void The_ide_context_of_a_message_is_public()
+        {
+            // the parser takes these blocks out of the text, so a user of the events has nowhere else to read them (0.2.0)
+            Assert.Contains("ClaudeCliProtocol.ContextBlock", Names);
+            var context = typeof(UserBlock).GetProperty("Context");
+            Assert.NotNull(context);
+            Assert.Equal(typeof(IReadOnlyList<ContextBlock>), context!.PropertyType);
+            Assert.True(context.GetMethod!.IsPublic);
         }
 
         [Fact]
