@@ -61,7 +61,7 @@ Rules that hold for all of them:
 | Event | Comes from | Fields |
 |---|---|---|
 | `assistant_block` | stdout and file: `assistant`, one per block | `message_id`, `parent_tool_use_id`, `block`, `timestamp`, `thinking_duration_ms`, `uuid`, `supersedes`, `is_synthetic` |
-| `user_block` | stdout and file: `user` (and `attachment` of `queued_command`, in the file) | `parent_tool_use_id`, `block`, `tool_use_result`, `is_meta`, `is_compact_summary`, `timestamp`, `images`, `is_synthetic`, `origin`, `uuid`, `is_queued_command` |
+| `user_block` | stdout and file: `user` (and `attachment` of `queued_command`, in the file) | `parent_tool_use_id`, `block`, `tool_use_result`, `is_meta`, `is_compact_summary`, `timestamp`, `images`, `is_synthetic`, `origin`, `uuid`, `is_queued_command`, `context` |
 | `command_echo` | file: the `<command-name>` text of a `user` line | `name`, `arguments` |
 | `command_output` | stdout and file: the `<local-command-stdout>` text; `system/local_command` | `text` |
 
@@ -70,6 +70,11 @@ Rules that hold for all of them:
   discarded and wrote again).
 - `user_block.origin` says where the message came from: `kind` (`human`, `peer`, `channel`,
   `task-notification`, `coordinator`, `plugin`…), `name`, `sender_task_id` and `subkind`.
+- `user_block.context` holds the context blocks the IDE sends before the text: the output of a
+  terminal, a browser tab, the browser instructions or an editor selection. Each one has `kind`
+  (`terminal`, `browser-tab`, `browser-instructions` or `selection`), `subject` and `content`. The
+  reader takes these blocks out of the text, so this is the only place they appear. No recording
+  has one: the list is empty in all of them.
 - `command_echo.name` comes without the slash.
 
 ### The blocks
@@ -83,9 +88,17 @@ The `block` field is an object with `kind` and the fields of the block:
 | `tool_use` | `id`, `name`, `input` |
 | `tool_result` | `tool_use_id`, `text`, `is_error`, `non_execution_kind`, `images` |
 | `image` | `media_type`, `data` |
+| `advisor_use` | `id` |
+| `advisor_result` | `tool_use_id`, `outcome`, `text`, `error_code` |
 
 The `text` of a `tool_result` joins the text blocks of the `content` with `\n`. The `data` of an
 image goes as `{"length": …, "sha256": …}` in the expected result, not whole.
+
+The last two belong to the advisor, a server tool (scenario `advisor`). `advisor_use` is the call:
+a `server_tool_use` block named `advisor`. `advisor_result` is the verdict, an
+`advisor_tool_result` block that comes in the assistant's message, not in a `user` line. `outcome`
+is `reviewed`, `declined` (the verdict's `stop_reason` is `refusal`) or `unavailable` (with the
+`error_code`). `text` is `null` when the verdict comes encrypted or does not come.
 
 ## Permission and control
 
@@ -118,14 +131,19 @@ image goes as `{"length": …, "sha256": …}` in the expected result, not whole
 | `agent_task_progress` | stdout: `system/task_progress` | `task_id`, `tool_use_id`, `activity`, `tokens`, `tool_uses`, `duration_ms` |
 | `agent_task_updated` | stdout: `system/task_updated` | `task_id`, `status`, `is_backgrounded` |
 | `agent_task_finished` | stdout: `system/task_notification`; file: the `<task-notification>` text of a `user` line | `task_id`, `tool_use_id`, `status`, `summary`, `tokens`, `tool_uses`, `duration_ms` |
+| `background_tasks_changed` | stdout: `system/background_tasks_changed` | `tasks` |
 
-- `task_type` is `local_agent` for a sub-agent and `local_bash` for a command.
+- `task_type` is `local_agent` for a sub-agent, `local_bash` for a command and `local_workflow`
+  for a workflow.
 - `depth` is the `spawn_depth` (1 when the line does not say).
 - `tokens`, `tool_uses` and `duration_ms` come from the `usage` of the line.
+- `background_tasks_changed.tasks[]`: `task_id`, `task_type` and `description`. Each line brings
+  the whole list and replaces the one before; an empty list means nothing runs. An entry without a
+  `task_id` is skipped. The session file never has this line.
 
 ## The ones no recording exercises
 
-These events come from lines the 42 recordings do not have. Their shape is in the code of the .NET
+These events come from lines the 50 recordings do not have. Their shape is in the code of the .NET
 library and in the unit tests, and it is what is here. When a recording brings them, this table is
 checked against it.
 
@@ -169,7 +187,6 @@ from a line.
 ## Lines that yield no event
 
 - `stream_event` of `message_delta` and of `message_stop`;
-- `system/background_tasks_changed`;
 - `system/model_refusal_no_fallback`;
 - any `control_request` that is not `can_use_tool` (the transport answers with an error, see
   [Control](../controle/#the-request-nobody-serves));
