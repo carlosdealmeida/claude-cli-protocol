@@ -56,6 +56,7 @@ description: 两个方向的控制请求——从宿主到 claude，从 claude �
 | `get_settings` | 当前生效的设置 | — | `applied`（`model`、`effort`） | `effort` |
 | `get_context_usage` | 上下文窗口的使用情况 | — | `categories`、`totalTokens`、`maxTokens`、`percentage` | `commands` |
 | `get_task_output` | 某个后台任务已输出的内容 | `task_id` | — | 否 |
+| `stop_task` | 停止一个后台任务 | `task_id` | 无 | `stop-task` |
 | `remote_control` | 打开或关闭 Remote Control | `enabled` | 打开时为 `session_url` | 否 |
 | `get_chrome_dialog` | 浏览器扩展的状态 | — | — | 否 |
 
@@ -136,6 +137,22 @@ description: 两个方向的控制请求——从宿主到 claude，从 claude �
 
 `kind` 为 `used`、`deferred`、`buffer` 或 `free`。如果有的话，`model`、`memoryFiles` 和 `agents`
 补充这个回复。
+
+### `stop_task`
+
+<!-- stdin -->
+```json
+{"type":"control_request","request_id":"stop-1","request":{"subtype":"stop_task","task_id":"bn9i1f619"}}
+```
+
+`task_id` 来自 `system/background_tasks_changed` 或 `system/task_started` 行。`claude` 先结束任务，然后才
+回复。在 `stop-task` 场景中，带 `status: "stopped"` 的 `task_notification` 出现在第 30 行，空的任务列表在
+第 31 行，回复在第 32 行：
+
+<!-- fixture: stop-task.stream.ndjson:32 -->
+```json
+{"type": "control_response", "response": {"subtype": "success", "request_id": "stop-1", "response": {}}}
+```
 
 ### 如何读取响应体
 
