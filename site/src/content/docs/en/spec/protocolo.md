@@ -12,7 +12,7 @@ says what comes out on stdout. What goes into stdin is in [Commands](../comandos
 Anthropic does not document this protocol as a stable interface
 ([anthropics/claude-code#111046](https://github.com/anthropics/claude-code/issues/111046)). What is
 here was checked against the recordings in `fixtures/`, made with Claude Code 2.1.331 (the `image`
-scenario with 2.1.286), and against the code of the .NET library. A new version may change any
+scenario with 2.1.286; `advisor`, `bash-ansi`, `stop-task` and `workflow` with 2.1.330), and against the code of the .NET library. A new version may change any
 line. The weekly re-recording of the fixtures is what warns.
 :::
 
@@ -48,26 +48,26 @@ The optional ones (`--resume`, `--model`, `--effort`) and the check of each valu
 
 ## The kinds of line
 
-Count in the 21 stdout recordings (`fixtures/*.stream.ndjson`):
+Count in the 25 stdout recordings (`fixtures/*.stream.ndjson`):
 
 | `type` | Subtype | In the recordings | What it is |
 |---|---|---:|---|
-| `system` | `init` | 28 | The start of a turn: session, model, folder, mode, version |
-| `system` | `status` | 66 | What `claude` is doing (`requesting`, `compacting`, `null`) and the mode |
-| `system` | `thinking_tokens` | 28 | How many tokens `claude` has thought so far in the block that is arriving |
-| `system` | `task_started`, `task_progress`, `task_updated`, `task_notification` | 6 | A background task: a sub-agent or a command |
+| `system` | `init` | 33 | The start of a turn: session, model, folder, mode, version |
+| `system` | `status` | 74 | What `claude` is doing (`requesting`, `compacting`, `null`) and the mode |
+| `system` | `thinking_tokens` | 30 | How many tokens `claude` has thought so far in the block that is arriving |
+| `system` | `task_started`, `task_progress`, `task_updated`, `task_notification` | 15 | A background task: a sub-agent, a command or a workflow |
 | `system` | `compact_boundary` | 2 | The conversation was compacted |
 | `system` | `informational` | 1 | A notice from `claude` about its own work (a hook that blocked the prompt, for instance) |
-| `system` | `background_tasks_changed` | 2 | The list of background tasks changed. The library does not read it |
-| `stream_event` | `message_start` | 53 | A reply started to arrive |
-| `stream_event` | `content_block_start`, `content_block_delta`, `content_block_stop` | 1,015 | The blocks of the reply, piece by piece |
-| `stream_event` | `message_delta`, `message_stop` | 106 | The end of the reply. The library does not read them |
-| `assistant` | | 86 | A whole block of the reply |
-| `user` | | 45 | What goes back to the model: a tool result, a text from `claude` |
-| `control_request` | `can_use_tool` | 19 | A permission request |
+| `system` | `background_tasks_changed` | 6 | The whole list of background tasks, at each change |
+| `stream_event` | `message_start` | 61 | A reply started to arrive |
+| `stream_event` | `content_block_start`, `content_block_delta`, `content_block_stop` | 1,100 | The blocks of the reply, piece by piece |
+| `stream_event` | `message_delta`, `message_stop` | 122 | The end of the reply. The library does not read them |
+| `assistant` | | 97 | A whole block of the reply |
+| `user` | | 48 | What goes back to the model: a tool result, a text from `claude` |
+| `control_request` | `can_use_tool` | 20 | A permission request |
 | `control_cancel_request` | | 1 | `claude` gave up on a permission request |
-| `control_response` | `success` | 36 | The answer to a control request from the host |
-| `result` | `success`, `error_during_execution` | 28 | The end of a turn |
+| `control_response` | `success` | 41 | The answer to a control request from the host |
+| `result` | `success`, `error_during_execution` | 33 | The end of a turn |
 
 There are lines the library reads that no recording has. In `system`: `api_retry`,
 `hook_started`, `hook_response`, `commands_changed`, `bridge_state`, `local_command`,
@@ -78,7 +78,7 @@ recorded.
 
 ## The start of the turn: `system/init`
 
-A `system/init` line opens each turn, not each process. In the 21 recordings, the `system/init`
+A `system/init` line opens each turn, not each process. In the 25 recordings, the `system/init`
 and the `result` lines alternate, one to one.
 
 <!-- fixture: edit.stream.ndjson:2 -->
@@ -139,8 +139,23 @@ lines with the same `message.id`.
 {"type": "assistant", "message": {"id": "msg_011ChNjwF76zsXQUUbNF7yfr", "role": "assistant", "content": [{"type": "tool_use", "id": "toolu_015zZi1E7vQS17Zr1yMU1XbP", "name": "Read", "input": {"file_path": "C:\\demo\\app\\notes.md"}}]}, "parent_tool_use_id": null}
 ```
 
-The blocks a reader knows: `text`, `thinking`, `tool_use`, `tool_result` and `image`. A
+The blocks a reader knows: `text`, `thinking`, `tool_use`, `tool_result`, `image` and the two of the advisor. A
 `message.model` equal to `<synthetic>` marks a line written by `claude` itself, not by the model.
+
+The advisor is a server tool. The call is a `server_tool_use` block named `advisor`, and the
+verdict, an `advisor_tool_result` block, comes in an `assistant` line, not in a `user` one:
+
+<!-- fixture: advisor.stream.ndjson:10 -->
+```json
+{"type": "assistant", "message": {"id": "msg_011ChJm4RCsC4MLQpjNGC4wg", "role": "assistant", "content": [{"type": "advisor_tool_result", "tool_use_id": "srvtoolu_01UsaBcWLXWZgtjtrmoWaNKX", "content": {"type": "advisor_redacted_result", "encrypted_content": "redacted"}}]}}
+```
+
+- The verdict's `content.type` is `advisor_result` (with the `text`, and `stop_reason: "refusal"`
+  when the advisor declines), `advisor_redacted_result` (encrypted, with no text to read; the
+  recorder replaces the `encrypted_content` with `redacted`) or `advisor_tool_result_error` (with
+  the `error_code`). Only the second is recorded.
+- A `server_tool_use` with another name gives no block, and neither does a verdict whose
+  `content.type` is not known.
 
 ## What goes back to the model: `user`
 
@@ -207,8 +222,8 @@ Background tasks (`system/task_*`) can end after the `result` of the turn that o
 Claude Code also writes each session to disk, in a `.jsonl` (the "session file"). It is not stdout:
 it is another format, with other lines, and it is for reading a conversation that already happened.
 
-- **The kinds:** `user`, `assistant`, `system` and `attachment`. In the 21 recordings
-  (`fixtures/*.transcript.jsonl`) there are `user` (76), `assistant` (84), `system` with
+- **The kinds:** `user`, `assistant`, `system` and `attachment`. In the 25 recordings
+  (`fixtures/*.transcript.jsonl`) there are `user` (84), `assistant` (95), `system` with
   `compact_boundary` (2) and `informational` (1), and one `attachment` of `queued_command` (1).
 - **The names change.** The structured result of the tool is `toolUseResult`, not
   `tool_use_result`; the session id is `sessionId`; the compaction metadata may come as

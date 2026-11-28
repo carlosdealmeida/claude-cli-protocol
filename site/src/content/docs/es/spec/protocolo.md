@@ -12,7 +12,7 @@ página dice qué sale por el stdout. Lo que entra por el stdin está en [Comand
 Anthropic no documenta este protocolo como interfaz estable
 ([anthropics/claude-code#111046](https://github.com/anthropics/claude-code/issues/111046)). Lo que
 está aquí se comprobó en las grabaciones de `fixtures/`, hechas con Claude Code 2.1.331 (el
-escenario `image`, con 2.1.286), y en el código de la biblioteca .NET. Una versión nueva puede
+escenario `image`, con 2.1.286; `advisor`, `bash-ansi`, `stop-task` y `workflow`, con 2.1.330), y en el código de la biblioteca .NET. Una versión nueva puede
 cambiar cualquier línea. La regrabación semanal de las fixtures es lo que avisa.
 :::
 
@@ -48,26 +48,26 @@ Los opcionales (`--resume`, `--model`, `--effort`) y la comprobación de cada va
 
 ## Los tipos de línea
 
-Recuento en las 21 grabaciones del stdout (`fixtures/*.stream.ndjson`):
+Recuento en las 25 grabaciones del stdout (`fixtures/*.stream.ndjson`):
 
 | `type` | Subtipo | En las grabaciones | Qué es |
 |---|---|---:|---|
-| `system` | `init` | 28 | El comienzo de un turno: sesión, modelo, carpeta, modo, versión |
-| `system` | `status` | 66 | Qué está haciendo `claude` (`requesting`, `compacting`, `null`) y el modo |
-| `system` | `thinking_tokens` | 28 | Cuántos tokens ha pensado `claude` hasta ahora en el bloque que está llegando |
-| `system` | `task_started`, `task_progress`, `task_updated`, `task_notification` | 6 | Una tarea en segundo plano: un subagente o un comando |
+| `system` | `init` | 33 | El comienzo de un turno: sesión, modelo, carpeta, modo, versión |
+| `system` | `status` | 74 | Qué está haciendo `claude` (`requesting`, `compacting`, `null`) y el modo |
+| `system` | `thinking_tokens` | 30 | Cuántos tokens ha pensado `claude` hasta ahora en el bloque que está llegando |
+| `system` | `task_started`, `task_progress`, `task_updated`, `task_notification` | 15 | Una tarea en segundo plano: un subagente, un comando o un workflow |
 | `system` | `compact_boundary` | 2 | La conversación se compactó |
 | `system` | `informational` | 1 | Un aviso de `claude` sobre su propio trabajo (un hook que bloqueó el prompt, por ejemplo) |
-| `system` | `background_tasks_changed` | 2 | La lista de tareas en segundo plano cambió. La biblioteca no la lee |
-| `stream_event` | `message_start` | 53 | Una respuesta empezó a llegar |
-| `stream_event` | `content_block_start`, `content_block_delta`, `content_block_stop` | 1.015 | Los bloques de la respuesta, trozo a trozo |
-| `stream_event` | `message_delta`, `message_stop` | 106 | El fin de la respuesta. La biblioteca no los lee |
-| `assistant` | | 86 | Un bloque entero de la respuesta |
-| `user` | | 45 | Lo que vuelve al modelo: el resultado de una herramienta, un texto de `claude` |
-| `control_request` | `can_use_tool` | 19 | Una solicitud de permiso |
+| `system` | `background_tasks_changed` | 6 | La lista entera de las tareas en segundo plano, en cada cambio |
+| `stream_event` | `message_start` | 61 | Una respuesta empezó a llegar |
+| `stream_event` | `content_block_start`, `content_block_delta`, `content_block_stop` | 1.100 | Los bloques de la respuesta, trozo a trozo |
+| `stream_event` | `message_delta`, `message_stop` | 122 | El fin de la respuesta. La biblioteca no los lee |
+| `assistant` | | 97 | Un bloque entero de la respuesta |
+| `user` | | 48 | Lo que vuelve al modelo: el resultado de una herramienta, un texto de `claude` |
+| `control_request` | `can_use_tool` | 20 | Una solicitud de permiso |
 | `control_cancel_request` | | 1 | `claude` desistió de una solicitud de permiso |
-| `control_response` | `success` | 36 | La respuesta a una solicitud de control del host |
-| `result` | `success`, `error_during_execution` | 28 | El fin de un turno |
+| `control_response` | `success` | 41 | La respuesta a una solicitud de control del host |
+| `result` | `success`, `error_during_execution` | 33 | El fin de un turno |
 
 Hay líneas que la biblioteca lee y que ninguna grabación tiene. En `system`: `api_retry`,
 `hook_started`, `hook_response`, `commands_changed`, `bridge_state`, `local_command`,
@@ -78,7 +78,7 @@ no grabados.
 
 ## El comienzo del turno: `system/init`
 
-Una línea `system/init` abre cada turno, no cada proceso. En las 21 grabaciones, los `system/init`
+Una línea `system/init` abre cada turno, no cada proceso. En las 25 grabaciones, los `system/init`
 y los `result` se alternan, uno a uno.
 
 <!-- fixture: edit.stream.ndjson:2 -->
@@ -139,9 +139,25 @@ convierte en tres líneas con el mismo `message.id`.
 {"type": "assistant", "message": {"id": "msg_011ChNjwF76zsXQUUbNF7yfr", "role": "assistant", "content": [{"type": "tool_use", "id": "toolu_015zZi1E7vQS17Zr1yMU1XbP", "name": "Read", "input": {"file_path": "C:\\demo\\app\\notes.md"}}]}, "parent_tool_use_id": null}
 ```
 
-Los bloques que un lector conoce: `text`, `thinking`, `tool_use`, `tool_result` e `image`. Un
+Los bloques que un lector conoce: `text`, `thinking`, `tool_use`, `tool_result`, `image` y los dos del advisor. Un
 `message.model` igual a `<synthetic>` marca una línea escrita por el propio `claude`, no por el
 modelo.
+
+El advisor es una herramienta del servidor. La llamada es un bloque `server_tool_use` de nombre
+`advisor`, y el veredicto, un bloque `advisor_tool_result`, viene en una línea `assistant`, no en
+una `user`:
+
+<!-- fixture: advisor.stream.ndjson:10 -->
+```json
+{"type": "assistant", "message": {"id": "msg_011ChJm4RCsC4MLQpjNGC4wg", "role": "assistant", "content": [{"type": "advisor_tool_result", "tool_use_id": "srvtoolu_01UsaBcWLXWZgtjtrmoWaNKX", "content": {"type": "advisor_redacted_result", "encrypted_content": "redacted"}}]}}
+```
+
+- El `content.type` del veredicto es `advisor_result` (con el `text`, y `stop_reason: "refusal"`
+  cuando el advisor se niega), `advisor_redacted_result` (cifrado, sin texto que leer; el grabador
+  cambia el `encrypted_content` por `redacted`) o `advisor_tool_result_error` (con el `error_code`).
+  Solo el segundo está grabado.
+- Un `server_tool_use` de otro nombre no da bloque, y un veredicto de `content.type` desconocido
+  tampoco.
 
 ## Lo que vuelve al modelo: `user`
 
@@ -209,8 +225,8 @@ las abrió: en el escenario `subagent`, el `task_notification` llega en la líne
 Claude Code también graba cada sesión en disco, en un `.jsonl` (el "archivo de la sesión"). No es el
 stdout: es otro formato, con otras líneas, y sirve para leer una conversación que ya ocurrió.
 
-- **Los tipos:** `user`, `assistant`, `system` y `attachment`. En las 21 grabaciones
-  (`fixtures/*.transcript.jsonl`) aparecen `user` (76), `assistant` (84), `system` con
+- **Los tipos:** `user`, `assistant`, `system` y `attachment`. En las 25 grabaciones
+  (`fixtures/*.transcript.jsonl`) aparecen `user` (84), `assistant` (95), `system` con
   `compact_boundary` (2) e `informational` (1), y un `attachment` de `queued_command` (1).
 - **Los nombres cambian.** El resultado estructurado de la herramienta es `toolUseResult`, no
   `tool_use_result`; el id de la sesión es `sessionId`; los metadatos de la compactación pueden

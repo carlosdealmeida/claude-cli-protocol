@@ -7,8 +7,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **The advisor's blocks.** `AdvisorUseBlock` (a `server_tool_use` named `advisor`) and `AdvisorResultBlock` (an `advisor_tool_result`), with the `AdvisorOutcome` of the verdict: reviewed, declined or unavailable. Another server tool, or a verdict of a kind not known, gives no block.
+- **`BackgroundTasksChanged`,** the whole list of the tasks running in the background (`system/background_tasks_changed`), each a `BackgroundTaskEntry`. The line gave no event before.
+- **`StopTask`,** the control request that stops a background task (`stop_task`).
+- **The IDE context of a message is public:** `ContextBlock` and `UserBlock.Context`. The parser takes these blocks out of the text, so a user of the events had nowhere else to read them.
+- **Four recorded scenarios,** `advisor`, `bash-ansi`, `stop-task` and `workflow`, from Claude Visual Chat: 50 recordings in `fixtures/`, each with its expected result. The recorder takes a scenario's model and extra arguments, stops a background task as a step, cuts every `encrypted_content` and replaces the project folder Claude Code 2.1.330 names with a hash.
 - **The specification on the site**, in the five languages: six pages under `spec/`, for the protocol, the commands, the control requests, the transport, the events and the fixtures. Every example line is a line of a recording or of the stdin writer.
 - `tools/test_site_spec.py`, which checks each example against the recording it names and the table of events against the expected results, in every language; CI runs it. `check-dist.mjs` also checks that each link between the pages of the specification leads to a heading that exists.
+
+### Changed
+- **The expected results have one more field:** `context` in every `user_block`, empty in all the recordings. A block of the advisor has the kind `advisor_use` or `advisor_result`.
+- The recording `subagent` was sanitized again: it held a project folder named with a hash of the recorder's folder. The privacy tests now look for one.
+
+### Fixed
+- **A `netstandard2.0` library that uses this package now runs under .NET 6 or later.** It could not set an init-only property of a command or of an event, nor copy one with `with`: the call ended in a `MissingMethodException`, because the two builds of the package sign those setters with different marker types. The `net6.0` build now forwards the marker of the `netstandard2.0` build to the runtime's. An app that targets .NET 6 or later directly, or the .NET Framework, was not affected.
 
 ## [0.1.0] - 2026-11-24
 

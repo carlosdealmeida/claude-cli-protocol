@@ -60,7 +60,7 @@ description: 讀取器產生的事件一覽——每個事件來自哪一行、�
 | 事件 | 來源 | 欄位 |
 |---|---|---|
 | `assistant_block` | stdout 與對話記錄：`assistant`，每個區塊一個 | `message_id`, `parent_tool_use_id`, `block`, `timestamp`, `thinking_duration_ms`, `uuid`, `supersedes`, `is_synthetic` |
-| `user_block` | stdout 與對話記錄：`user`（以及對話記錄中 `queued_command` 的 `attachment`） | `parent_tool_use_id`, `block`, `tool_use_result`, `is_meta`, `is_compact_summary`, `timestamp`, `images`, `is_synthetic`, `origin`, `uuid`, `is_queued_command` |
+| `user_block` | stdout 與對話記錄：`user`（以及對話記錄中 `queued_command` 的 `attachment`） | `parent_tool_use_id`, `block`, `tool_use_result`, `is_meta`, `is_compact_summary`, `timestamp`, `images`, `is_synthetic`, `origin`, `uuid`, `is_queued_command`, `context` |
 | `command_echo` | 對話記錄：`user` 行中的 `<command-name>` 文字 | `name`, `arguments` |
 | `command_output` | stdout 與對話記錄：`<local-command-stdout>` 文字；`system/local_command` | `text` |
 
@@ -68,6 +68,10 @@ description: 讀取器產生的事件一覽——每個事件來自哪一行、�
 - `assistant_block.supersedes` 是這一行所取代的各行的 `uuid`（`claude` 捨棄後重新寫出的回覆）。
 - `user_block.origin` 說明訊息來自哪裡：`kind`（`human`、`peer`、`channel`、`task-notification`、
   `coordinator`、`plugin`……）、`name`、`sender_task_id` 與 `subkind`。
+- `user_block.context` 是 IDE 在文字之前送出的上下文區塊：終端機的輸出、瀏覽器分頁、瀏覽器指示或編輯器中的
+  選取範圍。每個區塊有 `kind`（`terminal`、`browser-tab`、`browser-instructions` 或 `selection`）、
+  `subject` 與 `content`。讀取器會把這些區塊從文字中取出，所以它們只出現在這裡。沒有任何錄製帶有這樣的區塊：
+  在所有錄製中這份清單都是空的。
 - `command_echo.name` 不含斜線。
 
 ### 區塊
@@ -81,9 +85,16 @@ description: 讀取器產生的事件一覽——每個事件來自哪一行、�
 | `tool_use` | `id`, `name`, `input` |
 | `tool_result` | `tool_use_id`, `text`, `is_error`, `non_execution_kind`, `images` |
 | `image` | `media_type`, `data` |
+| `advisor_use` | `id` |
+| `advisor_result` | `tool_use_id`, `outcome`, `text`, `error_code` |
 
 `tool_result` 的 `text` 以 `\n` 串接 `content` 中的文字區塊。圖片的 `data` 在預期結果中寫作
 `{"length": …, "sha256": …}`，而不是完整內容。
+
+最後兩種屬於 advisor，它是一個伺服器端工具（情境 `advisor`）。`advisor_use` 是呼叫：一個名為 `advisor` 的
+`server_tool_use` 區塊。`advisor_result` 是評審結論，也就是 `advisor_tool_result` 區塊，它出現在助理的訊息中，
+而不是 `user` 行中。`outcome` 為 `reviewed`、`declined`（結論的 `stop_reason` 為 `refusal`）或
+`unavailable`（帶 `error_code`）。當結論是加密的或沒有傳回時，`text` 為 `null`。
 
 ## 權限與控制
 
@@ -115,14 +126,17 @@ description: 讀取器產生的事件一覽——每個事件來自哪一行、�
 | `agent_task_progress` | stdout：`system/task_progress` | `task_id`, `tool_use_id`, `activity`, `tokens`, `tool_uses`, `duration_ms` |
 | `agent_task_updated` | stdout：`system/task_updated` | `task_id`, `status`, `is_backgrounded` |
 | `agent_task_finished` | stdout：`system/task_notification`；對話記錄：`user` 行中的 `<task-notification>` 文字 | `task_id`, `tool_use_id`, `status`, `summary`, `tokens`, `tool_uses`, `duration_ms` |
+| `background_tasks_changed` | stdout: `system/background_tasks_changed` | `tasks` |
 
-- `task_type` 對子智慧體為 `local_agent`，對命令為 `local_bash`。
+- `task_type` 對子智慧體為 `local_agent`，對命令為 `local_bash`，對 workflow 為 `local_workflow`。
 - `depth` 即 `spawn_depth`（行中未說明時為 1）。
 - `tokens`、`tool_uses` 與 `duration_ms` 來自該行的 `usage`。
+- `background_tasks_changed.tasks[]`：`task_id`、`task_type` 與 `description`。每一行都帶來完整的清單，
+  並取代上一行的清單；空清單表示沒有工作在執行。沒有 `task_id` 的項目會被略過。工作階段檔案中從不出現這一行。
 
 ## 沒有任何錄製涵蓋的事件
 
-這些事件來自 42 份錄製中都沒有的行。它們的結構以 .NET 程式庫的程式碼與單元測試為準，也就是這裡所寫的內容。
+這些事件來自 50 份錄製中都沒有的行。它們的結構以 .NET 程式庫的程式碼與單元測試為準，也就是這裡所寫的內容。
 當某份錄製包含它們時，會以它核對本表。
 
 | 事件 | 來源 | 欄位 |
@@ -162,7 +176,6 @@ description: 讀取器產生的事件一覽——每個事件來自哪一行、�
 ## 不產生事件的行
 
 - `message_delta` 與 `message_stop` 的 `stream_event`；
-- `system/background_tasks_changed`；
 - `system/model_refusal_no_fallback`；
 - 任何不是 `can_use_tool` 的 `control_request`（傳輸層以錯誤回覆，見
   [控制](../controle/#無人處理的請求)）；

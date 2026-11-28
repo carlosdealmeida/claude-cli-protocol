@@ -6,7 +6,7 @@ description: The recordings of real claude -p sessions, the expected result of e
 The fixtures are recordings of real `claude -p` sessions, kept in
 [`fixtures/`](https://github.com/carlosdealmeida/claude-cli-protocol/tree/master/fixtures).
 **Conformance is theirs:** a library, in any language, speaks the protocol when it reads each
-recording and produces the expected result next to it. The .NET library passes all 42; the Delphi
+recording and produces the expected result next to it. The .NET library passes all 50; the Delphi
 one will pass the same ones.
 
 ## The files
@@ -48,11 +48,17 @@ each scenario, in `tools/cenarios.json`.
 | `error-long` | Runs a command that prints 40 lines on stderr and exits with 3 | A long error result, a `decision_reason` from a check |
 | `error-wrapped` | Asks for an `Edit` of a text that does not exist | The error of the tool |
 | `seguranca` | Asks for a `Write` to `.claude/settings.local.json`; denies | `decision_reason_type: safetyCheck` |
+| `bash-ansi` | Runs a `printf` with terminal colors, a bell and a zero-width character | A tool result with terminal codes and invisible characters |
+| `advisor` | Asks for one call to the advisor, with `--advisor opus` | The `server_tool_use` and `advisor_tool_result` blocks, with the verdict encrypted |
+| `workflow` | Asks for a workflow of one phase, with one agent | `system/background_tasks_changed` with `local_workflow`, the workflow's `system/task_*` lines |
+| `stop-task` | Runs `sleep 60` in the background and sends `stop_task` two seconds later | `task_notification` with `status: stopped`, the empty list of tasks, the reply to `stop_task` |
 
-There are 21 recorded scenarios. The script has a 22nd, `subagent-permission`, which was never
+There are 25 recorded scenarios. The script has a 26th, `subagent-permission`, which was never
 recorded. Twenty recordings are from Claude Code 2.1.331; the `image` one is from 2.1.286, because
 in the re-recording of 2026-11-25 the model replied without opening the image, and the earlier
 recording is the only one with a tool result that carries an image.
+The ones of `bash-ansi`, `advisor`, `workflow` and `stop-task` are from 2.1.330: they were recorded in
+Claude Visual Chat and came from there.
 
 ## The expected result
 
@@ -91,11 +97,11 @@ Lines are separated by `\n`; a `\n` at the end is ignored, and a blank line does
 
 ### What passing proves
 
-The 42 expected results were written by the .NET library. Passing them proves that a library reads
+The 50 expected results were written by the .NET library. Passing them proves that a library reads
 the recordings as the .NET library reads them, and that a change of behaviour shows up as a
 difference. It does not prove, alone, that each field is right. Three scenarios (`edit`, `denied`
 and `mode-and-model`) were checked from outside, with a script that reads the raw recording. The
-recordings exercise 27 of the 36 kinds of event of the readers; the other nine are in
+recordings exercise 28 of the 37 kinds of event of the readers; the other nine are in
 [Events](../eventos/#the-ones-no-recording-exercises).
 
 ## Sanitizing
@@ -105,13 +111,17 @@ recorder (`tools/gravar.py`):
 
 - replaces the folder, the home and the user name with those of `demo` (`C:\demo\app`,
   `C:\Users\demo`), also when a path arrives split across several deltas of a block;
+- replaces with the name of `demo`'s folder (`C--demo-app`) the project folder Claude Code makes
+  under `Temp\claude`, whose name, since 2.1.330, is 16 hexadecimal digits derived from the folder
+  of whoever recorded;
+- replaces every `encrypted_content`, such as the one of the advisor's verdict, with `redacted`;
 - keeps in the `system/init` line only the known fields, and drops the `mcp__` tools;
 - keeps in the answers to `initialize`, `get_settings` and `get_context_usage` only the known
   fields, and drops the account;
 - drops the `rate_limit_event` lines, which belong to the account of whoever recorded, and the
   `credential_expires_at` of the `result`.
 
-The privacy test (`FixturePrivacyTests`) looks in each file for a folder of another user, anything
+The privacy test (`FixturePrivacyTests`) looks in each file for a folder of another user, a project folder named by a hash, anything
 that looks like a credential and an e-mail address, and says on which line and in which field it
 found it, without showing the value. Neither of the two understands the text of the conversation:
 whoever records reads the recording before sending it.

@@ -17,7 +17,7 @@ Proyecto de la comunidad, sin afiliación ni respaldo de Anthropic.
 **Versión 0.1.0, de 2026-11-24.** La biblioteca .NET está en NuGet:
 `dotnet add package ClaudeCliProtocol`
 ([nuget.org](https://www.nuget.org/packages/ClaudeCliProtocol)). Lee y escribe el protocolo, inicia
-el `claude -p` de esta máquina y pasa las 42 grabaciones del repositorio. El transporte se prueba
+el `claude -p` de esta máquina y pasa las 50 grabaciones del repositorio. El transporte se prueba
 con un `claude` simulado; contra un `claude` real se ha ejecutado una vez, con un mensaje corto, en
 una prueba que solo se ejecuta a petición.
 

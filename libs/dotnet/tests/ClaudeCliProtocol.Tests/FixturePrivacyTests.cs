@@ -26,6 +26,13 @@ namespace ClaudeCliProtocol.Tests
         private static readonly Regex OtherUserFolder =
             new Regex(@"(users[\\/-]+|home[\\/]+)(?!demo\b)\w", RegexOptions.IgnoreCase);
 
+        /// <summary>
+        /// The project folder Claude Code 2.1.330 makes under <c>Temp\claude</c>: 16 hex digits derived from the
+        /// recorder's real working folder. The recordings write it as demo's slug, <c>C--demo-app</c>.
+        /// </summary>
+        private static readonly Regex ProjectHashFolder =
+            new Regex(@"temp(\\+|/)claude(\\+|/)[0-9a-f]{16}(?![0-9a-z])", RegexOptions.IgnoreCase);
+
         /// <summary>What a credential looks like: an Anthropic key or a GitHub token.</summary>
         private static readonly Regex Credential =
             new Regex(@"sk-ant-[A-Za-z0-9_-]{8,}|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{20,}", RegexOptions.CultureInvariant);
@@ -50,9 +57,9 @@ namespace ClaudeCliProtocol.Tests
         }
 
         [Fact]
-        public void There_are_two_recordings_for_each_of_the_21_scenarios()
+        public void There_are_two_recordings_for_each_of_the_25_scenarios()
         {
-            Assert.Equal(21, FixtureFiles.Scenarios.Length);
+            Assert.Equal(25, FixtureFiles.Scenarios.Length);
             foreach (var scenario in FixtureFiles.Scenarios)
             {
                 Assert.NotEmpty(FixtureFiles.StreamLines(scenario));
@@ -67,6 +74,23 @@ namespace ClaudeCliProtocol.Tests
                 Assert.True(OtherUserFolder.IsMatch(text), text);
             foreach (var text in new[] { @"C:\\Users\\demo\\x", "C--Users-demo-AppData", "/home/demo", "a user, at home" })
                 Assert.False(OtherUserFolder.IsMatch(text), text);
+        }
+
+        [Fact]
+        public void The_project_folder_pattern_finds_a_hash_and_spares_the_slug()
+        {
+            foreach (var text in new[]
+                     {
+                         @"Temp\\claude\\0123456789abcdef\\s", @"Temp\claude\0123456789abcdef\s",
+                         "Temp/claude/FEDCBA9876543210/s", @"Temp\\claude\\0123456789abcdef",
+                     })
+                Assert.True(ProjectHashFolder.IsMatch(text), text);
+            foreach (var text in new[]
+                     {
+                         @"Temp\\claude\\C--demo-app\\s", @"Temp\\claude\\0123456789abcdef0\\s",
+                         @"Temp\\claude\\0123456789abcde\\s", @"Temp\\other\\0123456789abcdef\\s",
+                     })
+                Assert.False(ProjectHashFolder.IsMatch(text), text);
         }
 
         [Fact]
@@ -176,6 +200,7 @@ namespace ClaudeCliProtocol.Tests
 
                 var match = OtherUserFolder.Match(text);
                 Assert.False(match.Success, Path.GetFileName(file) + " has a user folder other than 'demo'");
+                Assert.False(ProjectHashFolder.IsMatch(text), Path.GetFileName(file) + " has a project folder named by a hash, " + Where(text, ProjectHashFolder));
                 // what was found is not shown, only where: this message goes to a public log
                 Assert.False(Credential.IsMatch(text), Path.GetFileName(file) + " has what looks like a credential, " + Where(text, Credential));
                 Assert.False(EmailAddress.IsMatch(text), Path.GetFileName(file) + " has an e-mail address, " + Where(text, EmailAddress));
@@ -189,7 +214,7 @@ namespace ClaudeCliProtocol.Tests
                 new[]
                 {
                     "edit", "bash", "subagent", "error", "denied", "interrupted", "mode-and-model",
-                    "image", "commands", "effort", "plan", "plan-auto", "plan-feedback", "queued", "hook-blocked", "queued-compact", "error-long", "error-wrapped", "denied-long", "hook-ask", "seguranca",
+                    "image", "commands", "effort", "plan", "plan-auto", "plan-feedback", "queued", "hook-blocked", "queued-compact", "error-long", "error-wrapped", "denied-long", "hook-ask", "seguranca", "bash-ansi", "advisor", "workflow", "stop-task",
                 },
                 FixtureFiles.Scenarios);
             foreach (var scenario in FixtureFiles.Scenarios)

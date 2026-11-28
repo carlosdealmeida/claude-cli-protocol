@@ -5,9 +5,10 @@ namespace ClaudeCliProtocol
     /// <summary>
     /// One context block the IDE places before a typed prompt. <paramref name="Subject"/> is what the
     /// block names (a terminal name, host and path, <c>file#A-B</c>, or empty); <paramref name="Content"/>
-    /// is what the line shows when opened.
+    /// is what the line shows when opened. <paramref name="Kind"/> is <c>terminal</c>, <c>browser-tab</c>,
+    /// <c>browser-instructions</c> or <c>selection</c>.
     /// </summary>
-    internal sealed record ContextBlock(string Kind, string Subject, string Content);
+    public sealed record ContextBlock(string Kind, string Subject, string Content);
 
     /// <summary>
     /// Recognizes the four kinds of text item the IDE sends ahead of a prompt: terminal output

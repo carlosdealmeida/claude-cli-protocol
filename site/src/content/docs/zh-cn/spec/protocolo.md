@@ -14,7 +14,7 @@ stdin 的内容见[命令](../comandos/)和[控制](../controle/)；进程本身
 :::caution[该协议没有契约]
 Anthropic 并未把这个协议作为稳定接口来记录
 （[anthropics/claude-code#111046](https://github.com/anthropics/claude-code/issues/111046)）。这里的内容
-是对照 `fixtures/` 中的录制（使用 Claude Code 2.1.331 录制，`image` 场景使用 2.1.286）以及 .NET 库的
+是对照 `fixtures/` 中的录制（使用 Claude Code 2.1.331 录制，`image` 场景使用 2.1.286，`advisor`、`bash-ansi`、`stop-task` 和 `workflow` 场景使用 2.1.330）以及 .NET 库的
 代码核对的。新版本可能改变任何一行。每周重新录制 fixture 就是用来发出警告的。
 :::
 
@@ -45,26 +45,26 @@ claude -p --input-format stream-json --output-format stream-json --verbose
 
 ## 行的类型
 
-在 21 份 stdout 录制（`fixtures/*.stream.ndjson`）中的数量：
+在 25 份 stdout 录制（`fixtures/*.stream.ndjson`）中的数量：
 
 | `type` | 子类型 | 录制中出现次数 | 含义 |
 |---|---|---:|---|
-| `system` | `init` | 28 | 一轮对话的开始：会话、模型、文件夹、模式、版本 |
-| `system` | `status` | 66 | `claude` 正在做什么（`requesting`、`compacting`、`null`）以及模式 |
-| `system` | `thinking_tokens` | 28 | `claude` 在正在到达的块中到目前为止思考了多少令牌 |
-| `system` | `task_started`、`task_progress`、`task_updated`、`task_notification` | 6 | 一个后台任务：子智能体或命令 |
+| `system` | `init` | 33 | 一轮对话的开始：会话、模型、文件夹、模式、版本 |
+| `system` | `status` | 74 | `claude` 正在做什么（`requesting`、`compacting`、`null`）以及模式 |
+| `system` | `thinking_tokens` | 30 | `claude` 在正在到达的块中到目前为止思考了多少令牌 |
+| `system` | `task_started`、`task_progress`、`task_updated`、`task_notification` | 15 | 一个后台任务：子智能体、命令或 workflow |
 | `system` | `compact_boundary` | 2 | 对话被压缩了 |
 | `system` | `informational` | 1 | `claude` 关于自身工作的通知（例如某个钩子拦截了提示） |
-| `system` | `background_tasks_changed` | 2 | 后台任务列表发生变化。库不读取 |
-| `stream_event` | `message_start` | 53 | 一条回复开始到达 |
-| `stream_event` | `content_block_start`、`content_block_delta`、`content_block_stop` | 1,015 | 回复的各个块，一段一段地 |
-| `stream_event` | `message_delta`、`message_stop` | 106 | 回复结束。库不读取 |
-| `assistant` | | 86 | 回复中一个完整的块 |
-| `user` | | 45 | 返回给模型的内容：工具结果、`claude` 自己写的文本 |
-| `control_request` | `can_use_tool` | 19 | 一个权限请求 |
+| `system` | `background_tasks_changed` | 6 | 每次变化时的完整后台任务列表 |
+| `stream_event` | `message_start` | 61 | 一条回复开始到达 |
+| `stream_event` | `content_block_start`、`content_block_delta`、`content_block_stop` | 1,100 | 回复的各个块，一段一段地 |
+| `stream_event` | `message_delta`、`message_stop` | 122 | 回复结束。库不读取 |
+| `assistant` | | 97 | 回复中一个完整的块 |
+| `user` | | 48 | 返回给模型的内容：工具结果、`claude` 自己写的文本 |
+| `control_request` | `can_use_tool` | 20 | 一个权限请求 |
 | `control_cancel_request` | | 1 | `claude` 放弃了一个权限请求 |
-| `control_response` | `success` | 36 | 对宿主发出的控制请求的回复 |
-| `result` | `success`、`error_during_execution` | 28 | 一轮对话的结束 |
+| `control_response` | `success` | 41 | 对宿主发出的控制请求的回复 |
+| `result` | `success`、`error_during_execution` | 33 | 一轮对话的结束 |
 
 有些行库会读取，但没有任何录制包含。在 `system` 中：`api_retry`、`hook_started`、`hook_response`、
 `commands_changed`、`bridge_state`、`local_command`、`per_turn_effort_changed`、
@@ -73,7 +73,7 @@ claude -p --input-format stream-json --output-format stream-json --verbose
 
 ## 一轮对话的开始：`system/init`
 
-`system/init` 行开启的是每一轮对话，而不是每个进程。在 21 份录制中，`system/init` 和 `result`
+`system/init` 行开启的是每一轮对话，而不是每个进程。在 25 份录制中，`system/init` 和 `result`
 一一交替出现。
 
 <!-- fixture: edit.stream.ndjson:2 -->
@@ -128,8 +128,21 @@ claude -p --input-format stream-json --output-format stream-json --verbose
 {"type": "assistant", "message": {"id": "msg_011ChNjwF76zsXQUUbNF7yfr", "role": "assistant", "content": [{"type": "tool_use", "id": "toolu_015zZi1E7vQS17Zr1yMU1XbP", "name": "Read", "input": {"file_path": "C:\\demo\\app\\notes.md"}}]}, "parent_tool_use_id": null}
 ```
 
-读取器认识的块：`text`、`thinking`、`tool_use`、`tool_result` 和 `image`。`message.model` 等于
+读取器认识的块：`text`、`thinking`、`tool_use`、`tool_result`、`image` 以及 advisor 的两种块。`message.model` 等于
 `<synthetic>` 表示这一行由 `claude` 自己写，而不是模型写的。
+
+advisor 是一个服务器端工具。调用是一个名为 `advisor` 的 `server_tool_use` 块，而评审结论，即
+`advisor_tool_result` 块，出现在 `assistant` 行中，而不是 `user` 行中：
+
+<!-- fixture: advisor.stream.ndjson:10 -->
+```json
+{"type": "assistant", "message": {"id": "msg_011ChJm4RCsC4MLQpjNGC4wg", "role": "assistant", "content": [{"type": "advisor_tool_result", "tool_use_id": "srvtoolu_01UsaBcWLXWZgtjtrmoWaNKX", "content": {"type": "advisor_redacted_result", "encrypted_content": "redacted"}}]}}
+```
+
+- 结论的 `content.type` 为 `advisor_result`（带 `text`，当 advisor 拒绝时带 `stop_reason: "refusal"`）、
+  `advisor_redacted_result`（加密的，没有可读的文本；录制器把 `encrypted_content` 替换为 `redacted`）或
+  `advisor_tool_result_error`（带 `error_code`）。只有第二种有录制。
+- 其他名称的 `server_tool_use` 不产生块，`content.type` 未知的结论也不产生块。
 
 ## 返回给模型的内容：`user`
 
@@ -191,8 +204,8 @@ claude -p --input-format stream-json --output-format stream-json --verbose
 Claude Code 还会把每个会话写入磁盘上的 `.jsonl` 文件（“对话记录”）。它不是 stdout：它是另一种格式，
 有另外的行，用来读取已经发生过的对话。
 
-- **类型：** `user`、`assistant`、`system` 和 `attachment`。在 21 份录制（`fixtures/*.transcript.jsonl`）
-  中出现了 `user`（76）、`assistant`（84）、带 `compact_boundary`（2）和 `informational`（1）的
+- **类型：** `user`、`assistant`、`system` 和 `attachment`。在 25 份录制（`fixtures/*.transcript.jsonl`）
+  中出现了 `user`（84）、`assistant`（95）、带 `compact_boundary`（2）和 `informational`（1）的
   `system`，以及一个 `queued_command` 的 `attachment`（1）。
 - **名称不同。** 工具的结构化结果是 `toolUseResult`，而不是 `tool_use_result`；会话 id 是
   `sessionId`；压缩的元数据可能是 `compactMetadata`，带 `preTokens` 和 `postTokens`。

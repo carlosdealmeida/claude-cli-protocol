@@ -1,7 +1,7 @@
 {
   "format": 1,
   "events": [
-    {"line":1,"event":"user_block","fields":{"parent_tool_use_id":null,"block":{"kind":"text","text":"Say hi in one line."},"tool_use_result":null,"is_meta":false,"is_compact_summary":false,"timestamp":"2026-11-25T01:00:42.542Z","images":[],"is_synthetic":false,"origin":null,"uuid":"94e8e1d2-dca4-4165-bc29-9a2848d0aacb","is_queued_command":false}},
+    {"line":1,"event":"user_block","fields":{"parent_tool_use_id":null,"block":{"kind":"text","text":"Say hi in one line."},"tool_use_result":null,"is_meta":false,"is_compact_summary":false,"timestamp":"2026-11-25T01:00:42.542Z","images":[],"is_synthetic":false,"origin":null,"uuid":"94e8e1d2-dca4-4165-bc29-9a2848d0aacb","is_queued_command":false,"context":[]}},
     {"line":2,"event":"assistant_block","fields":{"message_id":"msg_011ChNk11tV8PmaCxTMrmsAX","parent_tool_use_id":null,"block":{"kind":"text","text":"Hi!"},"timestamp":"2026-11-25T01:00:43.232Z","thinking_duration_ms":null,"uuid":"6016615f-76d5-403a-85a6-413c336508da","supersedes":[],"is_synthetic":false}},
     {"line":2,"event":"prompt_cache_used","fields":{"ttl":300000,"at":"2026-11-25T01:00:43.232Z"}}
   ]

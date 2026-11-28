@@ -9,7 +9,7 @@ description: 真实 claude -p 会话的录制、每份录制的预期结果，�
 
 fixture 是真实 `claude -p` 会话的录制，保存在
 [`fixtures/`](https://github.com/carlosdealmeida/claude-cli-protocol/tree/master/fixtures) 中。**一致性以它们
-为准：** 任何语言的库，只要读取每份录制并产生旁边的预期结果，就算能说这个协议。.NET 库通过了全部 42 份；
+为准：** 任何语言的库，只要读取每份录制并产生旁边的预期结果，就算能说这个协议。.NET 库通过了全部 50 份；
 Delphi 库也将通过同样的这些。
 
 ## 文件
@@ -50,10 +50,16 @@ Delphi 库也将通过同样的这些。
 | `error-long` | 运行一条在 stderr 上打印 40 行并以 3 退出的命令 | 很长的错误结果、来自检查的 `decision_reason` |
 | `error-wrapped` | 请求对一段不存在的文本执行 `Edit` | 工具的错误 |
 | `seguranca` | 请求向 `.claude/settings.local.json` 执行 `Write`；拒绝 | `decision_reason_type: safetyCheck` |
+| `bash-ansi` | 运行一条带终端颜色、响铃符和零宽字符的 `printf` | 带终端控制码和不可见字符的工具结果 |
+| `advisor` | 使用 `--advisor opus`，请求调用一次 advisor | `server_tool_use` 和 `advisor_tool_result` 块，结论是加密的 |
+| `workflow` | 请求一个只有一个阶段、一个智能体的 workflow | 带 `local_workflow` 的 `system/background_tasks_changed`，以及 workflow 的 `system/task_*` 行 |
+| `stop-task` | 在后台运行 `sleep 60`，两秒后发送 `stop_task` | 带 `status: stopped` 的 `task_notification`、空的任务列表、`stop_task` 的回复 |
 
-共有 21 个已录制的场景。脚本中还有第 22 个 `subagent-permission`，从未录制过。二十份录制来自 Claude Code
+共有 25 个已录制的场景。脚本中还有第 26 个 `subagent-permission`，从未录制过。二十份录制来自 Claude Code
 2.1.331；`image` 的录制来自 2.1.286，因为在 2026-11-25 的重新录制中，模型没有打开图片就作答了，而之前的
 录制是唯一一份工具结果中带图片的录制。
+`bash-ansi`、`advisor`、`workflow` 和 `stop-task` 的录制来自 2.1.330：它们是在 Claude Visual Chat 中录制
+并从那里带过来的。
 
 ## 预期结果
 
@@ -88,9 +94,9 @@ Delphi 库也将通过同样的这些。
 
 ### 通过意味着什么
 
-42 份预期结果是由 .NET 库写出的。通过它们，证明一个库读取录制的方式与 .NET 库相同，并且行为的变化会显示
+50 份预期结果是由 .NET 库写出的。通过它们，证明一个库读取录制的方式与 .NET 库相同，并且行为的变化会显示
 为差异。仅凭这一点，并不能证明每个字段都是对的。有三个场景（`edit`、`denied` 和 `mode-and-model`）用一个
-读取原始录制的脚本从外部核对过。录制覆盖了读取器 36 种事件中的 27 种；另外九种见
+读取原始录制的脚本从外部核对过。录制覆盖了读取器 37 种事件中的 28 种；另外九种见
 [事件](../eventos/#没有任何录制覆盖的事件)。
 
 ## 脱敏
@@ -99,11 +105,14 @@ Delphi 库也将通过同样的这些。
 
 - 把文件夹、主目录和用户名替换为 `demo` 的（`C:\demo\app`、`C:\Users\demo`），即使路径被拆分在一个块的
   多个 delta 中也一样；
+- 把 Claude Code 在 `Temp\claude` 下创建的项目文件夹替换为 `demo` 文件夹的名称（`C--demo-app`）：从
+  2.1.330 起，这个文件夹的名称是由录制者的文件夹得出的 16 位十六进制数字；
+- 把所有 `encrypted_content`（例如 advisor 结论中的）替换为 `redacted`；
 - 在 `system/init` 行中只保留已知字段，并去掉 `mcp__` 工具；
 - 在 `initialize`、`get_settings` 和 `get_context_usage` 的回复中只保留已知字段，并去掉账户；
 - 去掉 `rate_limit_event` 行（它们属于录制者的账户）以及 `result` 中的 `credential_expires_at`。
 
-隐私测试（`FixturePrivacyTests`）会在每个文件中查找其他用户的文件夹、看起来像凭据的内容和电子邮件地址，并
+隐私测试（`FixturePrivacyTests`）会在每个文件中查找其他用户的文件夹、以哈希命名的项目文件夹、看起来像凭据的内容和电子邮件地址，并
 说明在哪一行、哪个字段找到，但不显示值。两者都不理解对话的文本：录制者在提交之前要自己读一遍录制。
 
 ## 每周重新录制

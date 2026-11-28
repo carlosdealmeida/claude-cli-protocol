@@ -86,6 +86,7 @@ namespace ClaudeCliProtocol.Tests
                 {
                     Images = new[] { new ImageBlock("image/png", "QUJD") },
                     Origin = new MessageOrigin("peer") { Name = "other" },
+                    Context = new[] { new ContextBlock("selection", "a.txt#1-2", "x = 1") },
                 }),
                 (4, new PromptCacheUsed(TimeSpan.FromMinutes(5), time)),
                 (5, new BlockDelta("m1", 2, null, DeltaKind.InputJson, "{\"a\"")),
@@ -109,7 +110,8 @@ namespace ClaudeCliProtocol.Tests
                   ""images"":[{""kind"":""image"",""media_type"":""image/png"",
                     ""data"":{""length"":4,""sha256"":""d9cae0dbdbf078b2020e2abe5fcd74bc1edba83c35f6b8a86d638ed9b8d3d1f9""}}],
                   ""is_synthetic"":false,""origin"":{""kind"":""peer"",""name"":""other"",""sender_task_id"":null,""subkind"":null},
-                  ""uuid"":null,""is_queued_command"":false}},
+                  ""uuid"":null,""is_queued_command"":false,
+                  ""context"":[{""kind"":""selection"",""subject"":""a.txt#1-2"",""content"":""x = 1""}]}},
                 {""line"":4,""event"":""prompt_cache_used"",""fields"":{""ttl"":300000,""at"":""2026-11-22T13:30:05.250Z""}}
               ]
             }");

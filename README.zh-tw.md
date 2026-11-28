@@ -16,7 +16,7 @@
 
 ## 狀態
 
-**版本 0.1.0，2026-11-24。** .NET 程式庫已發佈到 NuGet：`dotnet add package ClaudeCliProtocol`（[nuget.org](https://www.nuget.org/packages/ClaudeCliProtocol)）。它能讀寫該通訊協定，並能啟動本機的 `claude -p`：事件、兩個剖析器、命令、工作階段、錄製重播和 `ProcessTransport`。它在兩個目標框架上通過了 `fixtures/` 中的 42 份錄製。傳輸層使用模擬的 `claude` 進行測試；對真實的 `claude`（2.1.331，Windows）它執行過一次，傳送了一則簡短訊息，該測試僅在明確要求時執行。網站：<https://carlosdealmeida.github.io/claude-cli-protocol/zh-tw/>，其中有通訊協定的規格（[通訊協定](https://carlosdealmeida.github.io/claude-cli-protocol/zh-tw/spec/protocolo/)、[事件](https://carlosdealmeida.github.io/claude-cli-protocol/zh-tw/spec/eventos/)以及另外四頁）。
+**版本 0.1.0，2026-11-24。** .NET 程式庫已發佈到 NuGet：`dotnet add package ClaudeCliProtocol`（[nuget.org](https://www.nuget.org/packages/ClaudeCliProtocol)）。它能讀寫該通訊協定，並能啟動本機的 `claude -p`：事件、兩個剖析器、命令、工作階段、錄製重播和 `ProcessTransport`。它在兩個目標框架上通過了 `fixtures/` 中的 50 份錄製。傳輸層使用模擬的 `claude` 進行測試；對真實的 `claude`（2.1.331，Windows）它執行過一次，傳送了一則簡短訊息，該測試僅在明確要求時執行。網站：<https://carlosdealmeida.github.io/claude-cli-protocol/zh-tw/>，其中有通訊協定的規格（[通訊協定](https://carlosdealmeida.github.io/claude-cli-protocol/zh-tw/spec/protocolo/)、[事件](https://carlosdealmeida.github.io/claude-cli-protocol/zh-tw/spec/eventos/)以及另外四頁）。
 
 ## 這裡有什麼
 

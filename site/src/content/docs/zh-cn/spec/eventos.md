@@ -60,7 +60,7 @@ description: 读取器产生的事件一览——每个事件来自哪一行、�
 | 事件 | 来源 | 字段 |
 |---|---|---|
 | `assistant_block` | stdout 和对话记录：`assistant`，每个块一个 | `message_id`, `parent_tool_use_id`, `block`, `timestamp`, `thinking_duration_ms`, `uuid`, `supersedes`, `is_synthetic` |
-| `user_block` | stdout 和对话记录：`user`（以及对话记录中 `queued_command` 的 `attachment`） | `parent_tool_use_id`, `block`, `tool_use_result`, `is_meta`, `is_compact_summary`, `timestamp`, `images`, `is_synthetic`, `origin`, `uuid`, `is_queued_command` |
+| `user_block` | stdout 和对话记录：`user`（以及对话记录中 `queued_command` 的 `attachment`） | `parent_tool_use_id`, `block`, `tool_use_result`, `is_meta`, `is_compact_summary`, `timestamp`, `images`, `is_synthetic`, `origin`, `uuid`, `is_queued_command`, `context` |
 | `command_echo` | 对话记录：`user` 行中的 `<command-name>` 文本 | `name`, `arguments` |
 | `command_output` | stdout 和对话记录：`<local-command-stdout>` 文本；`system/local_command` | `text` |
 
@@ -68,6 +68,10 @@ description: 读取器产生的事件一览——每个事件来自哪一行、�
 - `assistant_block.supersedes` 是这一行所替换的各行的 `uuid`（`claude` 丢弃后重新写出的回复）。
 - `user_block.origin` 说明消息来自哪里：`kind`（`human`、`peer`、`channel`、`task-notification`、
   `coordinator`、`plugin`……）、`name`、`sender_task_id` 和 `subkind`。
+- `user_block.context` 是 IDE 在文本之前发送的上下文块：终端的输出、浏览器标签页、浏览器指令或编辑器中的
+  选区。每个块有 `kind`（`terminal`、`browser-tab`、`browser-instructions` 或 `selection`）、`subject`
+  和 `content`。读取器会把这些块从文本中取出，所以它们只出现在这里。没有任何录制带有这样的块：在所有录制中
+  这个列表都是空的。
 - `command_echo.name` 不带斜杠。
 
 ### 块
@@ -81,9 +85,16 @@ description: 读取器产生的事件一览——每个事件来自哪一行、�
 | `tool_use` | `id`, `name`, `input` |
 | `tool_result` | `tool_use_id`, `text`, `is_error`, `non_execution_kind`, `images` |
 | `image` | `media_type`, `data` |
+| `advisor_use` | `id` |
+| `advisor_result` | `tool_use_id`, `outcome`, `text`, `error_code` |
 
 `tool_result` 的 `text` 用 `\n` 连接 `content` 中的文本块。图片的 `data` 在预期结果中写作
 `{"length": …, "sha256": …}`，而不是完整内容。
+
+最后两种属于 advisor，它是一个服务器端工具（场景 `advisor`）。`advisor_use` 是调用：一个名为 `advisor` 的
+`server_tool_use` 块。`advisor_result` 是评审结论，即 `advisor_tool_result` 块，它出现在助手的消息中，而不是
+`user` 行中。`outcome` 为 `reviewed`、`declined`（结论的 `stop_reason` 为 `refusal`）或 `unavailable`
+（带 `error_code`）。当结论是加密的或没有返回时，`text` 为 `null`。
 
 ## 权限与控制
 
@@ -115,14 +126,17 @@ description: 读取器产生的事件一览——每个事件来自哪一行、�
 | `agent_task_progress` | stdout：`system/task_progress` | `task_id`, `tool_use_id`, `activity`, `tokens`, `tool_uses`, `duration_ms` |
 | `agent_task_updated` | stdout：`system/task_updated` | `task_id`, `status`, `is_backgrounded` |
 | `agent_task_finished` | stdout：`system/task_notification`；对话记录：`user` 行中的 `<task-notification>` 文本 | `task_id`, `tool_use_id`, `status`, `summary`, `tokens`, `tool_uses`, `duration_ms` |
+| `background_tasks_changed` | stdout: `system/background_tasks_changed` | `tasks` |
 
-- `task_type` 对子智能体为 `local_agent`，对命令为 `local_bash`。
+- `task_type` 对子智能体为 `local_agent`，对命令为 `local_bash`，对 workflow 为 `local_workflow`。
 - `depth` 即 `spawn_depth`（行中未说明时为 1）。
 - `tokens`、`tool_uses` 和 `duration_ms` 来自该行的 `usage`。
+- `background_tasks_changed.tasks[]`：`task_id`、`task_type` 和 `description`。每一行都带来完整的列表，
+  并替换上一行的列表；空列表表示没有任务在运行。没有 `task_id` 的条目会被跳过。会话文件中从不出现这一行。
 
 ## 没有任何录制覆盖的事件
 
-这些事件来自 42 份录制中都没有的行。它们的结构以 .NET 库的代码和单元测试为准，即这里写的内容。当某份
+这些事件来自 50 份录制中都没有的行。它们的结构以 .NET 库的代码和单元测试为准，即这里写的内容。当某份
 录制包含它们时，会据此核对本表。
 
 | 事件 | 来源 | 字段 |
@@ -162,7 +176,6 @@ description: 读取器产生的事件一览——每个事件来自哪一行、�
 ## 不产生事件的行
 
 - `message_delta` 和 `message_stop` 的 `stream_event`；
-- `system/background_tasks_changed`；
 - `system/model_refusal_no_fallback`；
 - 任何不是 `can_use_tool` 的 `control_request`（传输层以错误回复，见
   [控制](../controle/#无人处理的请求)）；

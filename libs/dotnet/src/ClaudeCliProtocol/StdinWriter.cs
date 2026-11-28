@@ -75,7 +75,7 @@ namespace ClaudeCliProtocol
             if (command == null) throw new ArgumentNullException(nameof(command));
             var requestId = command.RequestId
                 ?? throw new ArgumentException("A control command needs a request id before it is written.", nameof(command));
-            if (command is GetTaskOutput { TaskId: null })
+            if (command is GetTaskOutput { TaskId: null } || command is StopTask { TaskId: null })
                 throw new ArgumentNullException(nameof(command), "The task id is null.");
             return Line(w =>
             {
@@ -99,6 +99,9 @@ namespace ClaudeCliProtocol
                         break;
                     case GetTaskOutput output:
                         w.WriteString("task_id", output.TaskId);
+                        break;
+                    case StopTask stop:
+                        w.WriteString("task_id", stop.TaskId);
                         break;
                     case SetRemoteControl remote:
                         w.WriteBoolean("enabled", remote.Enabled);

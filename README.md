@@ -18,7 +18,7 @@ primeiro em .NET e depois em Delphi.
 **Versão 0.1.0, de 2026-11-24.** A lib .NET está no NuGet: `dotnet add package ClaudeCliProtocol`
 ([nuget.org](https://www.nuget.org/packages/ClaudeCliProtocol)). Ela lê e escreve o protocolo e sobe
 o `claude -p` desta máquina: eventos, os dois parsers, comandos, sessão, replay de gravações e o
-`ProcessTransport`. Passa nas 42 gravações de `fixtures/`, nos dois targets. O transporte é testado
+`ProcessTransport`. Passa nas 50 gravações de `fixtures/`, nos dois targets. O transporte é testado
 com um `claude` de mentira; contra um `claude` de verdade (2.1.331, no Windows) ele rodou uma vez,
 com uma mensagem curta, num teste que só roda a pedido. O site está em
 <https://carlosdealmeida.github.io/claude-cli-protocol/>, com a especificação do protocolo

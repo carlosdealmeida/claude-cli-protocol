@@ -33,6 +33,8 @@ SLUGS = ("protocolo", "comandos", "controle", "transporte", "eventos", "fixtures
 FIXTURES = os.path.join(ROOT, "fixtures")
 ELLIPSIS = "…"
 SESSION_EVENTS = {"control_replied"}
+# the kinds of event the two readers produce, recorded or not
+KINDS = 37
 
 BLOCK = re.compile(r"<!--\s*(fixture:\s*(?P<file>[^:\s]+):(?P<line>\d+)|stdin)\s*-->\s*\n```json\n(?P<body>.*?)\n```",
                    re.DOTALL)
@@ -165,12 +167,25 @@ class SpecPages(unittest.TestCase):
             if event in expected:
                 continue
             # a row of the tables of content blocks is not an event
-            if event in ("text", "thinking", "tool_use", "tool_result", "image"):
+            if event in ("text", "thinking", "tool_use", "tool_result", "image", "advisor_use", "advisor_result"):
                 continue
             self.assertIn(event, SESSION_EVENTS | set(unrecorded), event + " is listed as recorded")
         for event in unrecorded:
             self.assertNotIn(event, expected, event + " is recorded: move it up")
-        self.assertEqual(36, len(expected) + len(unrecorded), "the readers produce 36 kinds of event")
+        self.assertEqual(KINDS, len(expected) + len(unrecorded), "the readers produce %d kinds of event" % KINDS)
+
+    def test_the_fixtures_page_tells_how_many_kinds_of_event_the_recordings_exercise(self):
+        pair = {str(len(expected_events())), str(KINDS)}
+        for locale in UNRECORDED_SECTIONS:
+            lines = read(os.path.join(spec_folder(locale), "fixtures.md")).split("\n")
+            self.assertTrue(any(pair <= set(re.findall(r"\d+", line)) for line in lines),
+                            "%s: no line says %s" % (locale or "pt-BR", " of ".join(sorted(pair))))
+
+    def test_the_overview_tells_how_many_recordings_there_are(self):
+        recordings = len(glob.glob(os.path.join(FIXTURES, "*.ndjson"))) + len(glob.glob(os.path.join(FIXTURES, "*.jsonl")))
+        for locale in UNRECORDED_SECTIONS:
+            text = read(os.path.join(DOCS, locale, "overview.md"))
+            self.assertRegex(text, r"(?<!\d)%d(?!\d)" % recordings, locale or "pt-BR")
 
 
 if __name__ == "__main__":

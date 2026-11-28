@@ -19,7 +19,7 @@ lo hablan, primero en .NET y después en Delphi.
 `dotnet add package ClaudeCliProtocol`
 ([nuget.org](https://www.nuget.org/packages/ClaudeCliProtocol)). Lee y escribe el protocolo e inicia
 el `claude -p` de esta máquina: eventos, los dos parsers, comandos, sesión, reproducción de
-grabaciones y `ProcessTransport`. Pasa las 42 grabaciones de `fixtures/`, en los dos targets. El
+grabaciones y `ProcessTransport`. Pasa las 50 grabaciones de `fixtures/`, en los dos targets. El
 transporte se prueba con un `claude` simulado; contra un `claude` real (2.1.331, en Windows) se ha
 ejecutado una vez, con un mensaje corto, en una prueba que solo se ejecuta a petición. El sitio está
 en <https://carlosdealmeida.github.io/claude-cli-protocol/es/>, con la especificación del protocolo

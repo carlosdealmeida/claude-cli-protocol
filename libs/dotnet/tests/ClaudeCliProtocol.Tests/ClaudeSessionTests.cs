@@ -374,6 +374,23 @@ namespace ClaudeCliProtocol.Tests
         }
 
         [Fact]
+        public async Task The_reply_to_a_stop_task_comes_with_the_command_sent()
+        {
+            var transport = new ScriptedTransport();
+            await using var session = new ClaudeSession(transport);
+            transport.Enqueue(Init);
+            await session.SendAsync(new StopTask("t1"));
+            transport.Enqueue(Success(SentId(transport)));
+            transport.Close();
+
+            var events = await Drain(session);
+
+            var replied = Assert.Single(events.OfType<ControlReplied>());
+            Assert.Equal("t1", Assert.IsType<StopTask>(replied.Command).TaskId);
+            Assert.False(replied.Reply.IsError);
+        }
+
+        [Fact]
         public async Task An_error_reply_confirms_nothing()
         {
             var transport = new ScriptedTransport();

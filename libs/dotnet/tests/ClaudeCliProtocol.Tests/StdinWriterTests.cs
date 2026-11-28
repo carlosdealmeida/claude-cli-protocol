@@ -271,6 +271,21 @@ namespace ClaudeCliProtocol.Tests
         }
 
         [Fact]
+        public void Stop_task_asks_to_stop_the_task()
+        {
+            Assert.Equal("{\"type\":\"control_request\",\"request_id\":\"req_1\",\"request\":{\"subtype\":\"stop_task\",\"task_id\":\"t1\"}}",
+                         StdinWriter.Write(new StopTask("t1") { RequestId = "req_1" }));
+            Assert.Equal("stop_task", new StopTask("t1").Subtype);
+        }
+
+        [Fact]
+        public void A_task_request_without_its_task_is_rejected()
+        {
+            Assert.Throws<ArgumentNullException>(() => StdinWriter.Write(new GetTaskOutput(null!) { RequestId = "r1" }));
+            Assert.Throws<ArgumentNullException>(() => StdinWriter.Write(new StopTask(null!) { RequestId = "r1" }));
+        }
+
+        [Fact]
         public void Each_control_command_names_its_subtype()
         {
             Assert.Equal("initialize", new Initialize().Subtype);
