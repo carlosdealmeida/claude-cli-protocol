@@ -19,6 +19,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **The expected results have one more field:** `context` in every `user_block`, empty in all the recordings. A block of the advisor has the kind `advisor_use` or `advisor_result`.
 - The recording `subagent` was sanitized again: it held a project folder named with a hash of the recorder's folder. The privacy tests now look for one.
 
+### Fixed
+- **A `netstandard2.0` library that uses this package now runs under .NET 6 or later.** It could not set an init-only property of a command or of an event, nor copy one with `with`: the call ended in a `MissingMethodException`, because the two builds of the package sign those setters with different marker types. The `net6.0` build now forwards the marker of the `netstandard2.0` build to the runtime's. An app that targets .NET 6 or later directly, or the .NET Framework, was not affected.
+
 ## [0.1.0] - 2026-11-24
 
 The first release.
