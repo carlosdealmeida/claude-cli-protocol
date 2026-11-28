@@ -68,7 +68,7 @@ description: 讀取器產生的事件一覽——每個事件來自哪一行、�
 - `assistant_block.supersedes` 是這一行所取代的各行的 `uuid`（`claude` 捨棄後重新寫出的回覆）。
 - `user_block.origin` 說明訊息來自哪裡：`kind`（`human`、`peer`、`channel`、`task-notification`、
   `coordinator`、`plugin`……）、`name`、`sender_task_id` 與 `subkind`。
-- `user_block.context` 是 IDE 在文字之前送出的內容區塊：終端機的輸出、瀏覽器分頁、瀏覽器指示或編輯器中的
+- `user_block.context` 是 IDE 在文字之前送出的上下文區塊：終端機的輸出、瀏覽器分頁、瀏覽器指示或編輯器中的
   選取範圍。每個區塊有 `kind`（`terminal`、`browser-tab`、`browser-instructions` 或 `selection`）、
   `subject` 與 `content`。讀取器會把這些區塊從文字中取出，所以它們只出現在這裡。沒有任何錄製帶有這樣的區塊：
   在所有錄製中這份清單都是空的。

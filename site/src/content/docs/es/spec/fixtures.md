@@ -102,7 +102,7 @@ Los 50 resultados esperados los escribió la biblioteca .NET. Pasarlos prueba qu
 las grabaciones como las lee la biblioteca .NET, y que un cambio de comportamiento aparece como
 diferencia. No prueba, por sí solo, que cada campo esté bien. Tres escenarios (`edit`, `denied` y
 `mode-and-model`) se comprobaron desde fuera, con un script que lee la grabación cruda. Las
-grabaciones ejercitan 27 de los 36 tipos de evento de los lectores; los otros nueve están en
+grabaciones ejercitan 28 de los 37 tipos de evento de los lectores; los otros nueve están en
 [Eventos](../eventos/#los-que-ninguna-grabación-ejercita).
 
 ## La sanitización

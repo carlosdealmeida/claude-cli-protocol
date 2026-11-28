@@ -101,7 +101,7 @@ The 50 expected results were written by the .NET library. Passing them proves th
 the recordings as the .NET library reads them, and that a change of behaviour shows up as a
 difference. It does not prove, alone, that each field is right. Three scenarios (`edit`, `denied`
 and `mode-and-model`) were checked from outside, with a script that reads the raw recording. The
-recordings exercise 27 of the 36 kinds of event of the readers; the other nine are in
+recordings exercise 28 of the 37 kinds of event of the readers; the other nine are in
 [Events](../eventos/#the-ones-no-recording-exercises).
 
 ## Sanitizing

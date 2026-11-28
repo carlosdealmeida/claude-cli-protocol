@@ -98,7 +98,7 @@ As linhas são separadas por `\n`; um `\n` no fim é ignorado, e uma linha em br
 Os 50 resultados esperados foram escritos pela lib .NET. Passar neles prova que uma lib lê as
 gravações como a lib .NET lê, e que uma mudança de comportamento aparece como diferença. Não prova,
 sozinho, que cada campo está certo. Três cenários (`edit`, `denied` e `mode-and-model`) foram
-conferidos por fora, com um script que lê a gravação crua. As gravações exercitam 27 dos 36 tipos
+conferidos por fora, com um script que lê a gravação crua. As gravações exercitam 28 dos 37 tipos
 de evento dos leitores; os outros nove estão em
 [Eventos](../eventos/#os-que-nenhuma-gravação-exercita).
 
