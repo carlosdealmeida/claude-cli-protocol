@@ -55,6 +55,7 @@ La respuesta de error, con el texto en `response.error`:
 | `get_settings` | Los ajustes vigentes | — | `applied` (`model`, `effort`) | `effort` |
 | `get_context_usage` | El uso de la ventana de contexto | — | `categories`, `totalTokens`, `maxTokens`, `percentage` | `commands` |
 | `get_task_output` | Lo que una tarea en segundo plano imprimió | `task_id` | — | no |
+| `stop_task` | Detiene una tarea en segundo plano | `task_id` | ninguno | `stop-task` |
 | `remote_control` | Enciende o apaga Remote Control | `enabled` | `session_url`, al encender | no |
 | `get_chrome_dialog` | El estado de la extensión del navegador | — | — | no |
 
@@ -138,6 +139,23 @@ rechaza con una respuesta de error.
 
 `kind` es `used`, `deferred`, `buffer` o `free`. Cuando vienen, `model`, `memoryFiles` y `agents`
 completan la respuesta.
+
+### `stop_task`
+
+<!-- stdin -->
+```json
+{"type":"control_request","request_id":"stop-1","request":{"subtype":"stop_task","task_id":"bn9i1f619"}}
+```
+
+El `task_id` es el de la línea `system/background_tasks_changed` o `system/task_started`. El
+`claude` termina la tarea y solo después responde. En el escenario `stop-task`, el
+`task_notification` con `status: "stopped"` llega en la línea 30, la lista de tareas vacía en la
+línea 31 y la respuesta en la línea 32:
+
+<!-- fixture: stop-task.stream.ndjson:32 -->
+```json
+{"type": "control_response", "response": {"subtype": "success", "request_id": "stop-1", "response": {}}}
+```
 
 ### Cómo se lee el cuerpo
 

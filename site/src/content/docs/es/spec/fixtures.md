@@ -6,7 +6,7 @@ description: Las grabaciones de sesiones reales de claude -p, el resultado esper
 Las fixtures son grabaciones de sesiones reales de `claude -p`, guardadas en
 [`fixtures/`](https://github.com/carlosdealmeida/claude-cli-protocol/tree/master/fixtures). **La
 conformidad es de ellas:** una biblioteca, en cualquier lenguaje, habla el protocolo cuando lee cada
-grabación y produce el resultado esperado que está a su lado. La biblioteca .NET pasa las 42; la de
+grabación y produce el resultado esperado que está a su lado. La biblioteca .NET pasa las 50; la de
 Delphi pasará las mismas.
 
 ## Los archivos
@@ -48,11 +48,17 @@ el guion de cada escenario, en `tools/cenarios.json`.
 | `error-long` | Ejecuta un comando que imprime 40 líneas en el stderr y sale con 3 | Un resultado de error largo, un `decision_reason` de comprobación |
 | `error-wrapped` | Pide un `Edit` de un texto que no existe | El error de la herramienta |
 | `seguranca` | Pide un `Write` en `.claude/settings.local.json`; deniega | `decision_reason_type: safetyCheck` |
+| `bash-ansi` | Ejecuta un `printf` con colores de terminal, una señal sonora y un carácter de ancho cero | Un resultado de herramienta con códigos de terminal y caracteres invisibles |
+| `advisor` | Pide una llamada al advisor, con `--advisor opus` | Los bloques `server_tool_use` y `advisor_tool_result`, con el veredicto cifrado |
+| `workflow` | Pide un workflow de una fase, con un agente | `system/background_tasks_changed` con `local_workflow`, las líneas `system/task_*` del workflow |
+| `stop-task` | Ejecuta `sleep 60` en segundo plano y manda `stop_task` dos segundos después | `task_notification` con `status: stopped`, la lista de tareas vacía, la respuesta del `stop_task` |
 
-Son 21 escenarios grabados. El guion tiene un 22.º, `subagent-permission`, que nunca se grabó.
+Son 25 escenarios grabados. El guion tiene un 26.º, `subagent-permission`, que nunca se grabó.
 Veinte grabaciones son de Claude Code 2.1.331; la de `image` es de la 2.1.286, porque en la
 regrabación del 2026-11-25 el modelo respondió sin abrir la imagen, y la grabación anterior es la
 única con un resultado de herramienta que trae una imagen.
+Las de `bash-ansi`, `advisor`, `workflow` y `stop-task` son de la 2.1.330: se grabaron en Claude Visual
+Chat y vinieron de allí.
 
 ## El resultado esperado
 
@@ -92,7 +98,7 @@ Las líneas se separan con `\n`; un `\n` al final se ignora, y una línea en bla
 
 ### Qué prueba pasar
 
-Los 42 resultados esperados los escribió la biblioteca .NET. Pasarlos prueba que una biblioteca lee
+Los 50 resultados esperados los escribió la biblioteca .NET. Pasarlos prueba que una biblioteca lee
 las grabaciones como las lee la biblioteca .NET, y que un cambio de comportamiento aparece como
 diferencia. No prueba, por sí solo, que cada campo esté bien. Tres escenarios (`edit`, `denied` y
 `mode-and-model`) se comprobaron desde fuera, con un script que lee la grabación cruda. Las
@@ -106,13 +112,17 @@ Una grabación es una sesión real, y ninguna entra con datos personales de quie
 
 - cambia la carpeta, la home y el nombre de usuario por los de `demo` (`C:\demo\app`,
   `C:\Users\demo`), también cuando una ruta llega partida en varios deltas de un bloque;
+- cambia por el nombre de la carpeta de `demo` (`C--demo-app`) la carpeta de proyecto que Claude
+  Code crea bajo `Temp\claude`, cuyo nombre, desde la 2.1.330, son 16 dígitos hexadecimales sacados
+  de la carpeta de quien grabó;
+- cambia por `redacted` todo `encrypted_content`, como el del veredicto del advisor;
 - deja en la línea `system/init` solo los campos conocidos, y quita las herramientas `mcp__`;
 - deja en las respuestas del `initialize`, del `get_settings` y del `get_context_usage` solo los
   campos conocidos, y quita la cuenta;
 - quita las líneas `rate_limit_event`, que son de la cuenta de quien grabó, y el
   `credential_expires_at` del `result`.
 
-La prueba de privacidad (`FixturePrivacyTests`) busca en cada archivo una carpeta de otro usuario,
+La prueba de privacidad (`FixturePrivacyTests`) busca en cada archivo una carpeta de otro usuario, una carpeta de proyecto con nombre de hash,
 lo que parezca una credencial y una dirección de e-mail, y dice en qué línea y en qué campo lo
 encontró, sin mostrar el valor. Ninguno de los dos entiende el texto de la conversación: quien graba
 lee la grabación antes de mandarla.
