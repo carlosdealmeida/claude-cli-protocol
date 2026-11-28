@@ -30,6 +30,8 @@ namespace ClaudeCliProtocol.Tests
             [typeof(ToolUseBlock)] = "tool_use",
             [typeof(ToolResultBlock)] = "tool_result",
             [typeof(ImageBlock)] = "image",
+            [typeof(AdvisorUseBlock)] = "advisor_use",
+            [typeof(AdvisorResultBlock)] = "advisor_result",
         };
 
         /// <summary>The whole document: one event per line of the file, so a change shows as one changed line.</summary>

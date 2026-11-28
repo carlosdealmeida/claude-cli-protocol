@@ -1,0 +1,12 @@
+{
+  "format": 1,
+  "events": [
+    {"line":1,"event":"user_block","fields":{"parent_tool_use_id":null,"block":{"kind":"text","text":"Call the advisor tool exactly once to review this plan: 'print hello in Python'. Then reply with one word: done."},"tool_use_result":null,"is_meta":false,"is_compact_summary":false,"timestamp":"2026-11-22T22:32:12.682Z","images":[],"is_synthetic":false,"origin":null,"uuid":"41e1239d-fe32-4d8a-adb3-3e9370127212","is_queued_command":false,"context":[]}},
+    {"line":2,"event":"assistant_block","fields":{"message_id":"msg_011ChJm4RCsC4MLQpjNGC4wg","parent_tool_use_id":null,"block":{"kind":"advisor_use","id":"srvtoolu_01UsaBcWLXWZgtjtrmoWaNKX"},"timestamp":"2026-11-22T22:32:21.297Z","thinking_duration_ms":null,"uuid":"6b0222f0-43bb-40d0-8b19-c8ca6dab592a","supersedes":[],"is_synthetic":false}},
+    {"line":2,"event":"prompt_cache_used","fields":{"ttl":3600000,"at":"2026-11-22T22:32:21.297Z"}},
+    {"line":3,"event":"assistant_block","fields":{"message_id":"msg_011ChJm4RCsC4MLQpjNGC4wg","parent_tool_use_id":null,"block":{"kind":"advisor_result","tool_use_id":"srvtoolu_01UsaBcWLXWZgtjtrmoWaNKX","outcome":"reviewed","text":null,"error_code":null},"timestamp":"2026-11-22T22:32:21.301Z","thinking_duration_ms":null,"uuid":"84923d95-bebf-424b-ac69-3cc9753e6f3b","supersedes":[],"is_synthetic":false}},
+    {"line":3,"event":"prompt_cache_used","fields":{"ttl":3600000,"at":"2026-11-22T22:32:21.301Z"}},
+    {"line":4,"event":"assistant_block","fields":{"message_id":"msg_011ChJm4RCsC4MLQpjNGC4wg","parent_tool_use_id":null,"block":{"kind":"text","text":"done"},"timestamp":"2026-11-22T22:32:21.304Z","thinking_duration_ms":null,"uuid":"80ab0e7a-4237-460a-b7dc-828e9638bf1f","supersedes":[],"is_synthetic":false}},
+    {"line":4,"event":"prompt_cache_used","fields":{"ttl":3600000,"at":"2026-11-22T22:32:21.304Z"}}
+  ]
+}
