@@ -108,6 +108,15 @@ namespace ClaudeCliProtocol
         public override string Subtype => "get_task_output";
     }
 
+    /// <summary>
+    /// Asks the claude to stop the task <paramref name="TaskId"/> running in the background. The claude ends the task
+    /// (its <c>task_notification</c> says <c>stopped</c>) and then replies.
+    /// </summary>
+    public sealed record StopTask(string TaskId) : ControlCommand
+    {
+        public override string Subtype => "stop_task";
+    }
+
     /// <summary>Turns Remote Control on or off; the reply to turning it on brings the session's link.</summary>
     public sealed record SetRemoteControl(bool Enabled) : ControlCommand
     {
