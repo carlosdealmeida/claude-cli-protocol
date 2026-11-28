@@ -10,7 +10,7 @@ description: 真實 claude -p 工作階段的錄製、每份錄製的預期結�
 fixture 是真實 `claude -p` 工作階段的錄製，保存在
 [`fixtures/`](https://github.com/carlosdealmeida/claude-cli-protocol/tree/master/fixtures) 中。**一致性以它們
 為準：** 任何語言的程式庫，只要讀取每份錄製並產生旁邊的預期結果，就算能使用這個通訊協定。.NET 程式庫通過
-了全部 42 份；Delphi 程式庫也將通過同樣的這些。
+了全部 50 份；Delphi 程式庫也將通過同樣的這些。
 
 ## 檔案
 
@@ -50,10 +50,16 @@ fixture 是真實 `claude -p` 工作階段的錄製，保存在
 | `error-long` | 執行一個在 stderr 上印出 40 行並以 3 結束的命令 | 很長的錯誤結果、來自檢查的 `decision_reason` |
 | `error-wrapped` | 要求對一段不存在的文字執行 `Edit` | 工具的錯誤 |
 | `seguranca` | 要求對 `.claude/settings.local.json` 執行 `Write`；拒絕 | `decision_reason_type: safetyCheck` |
+| `bash-ansi` | 執行一條帶終端機顏色、響鈴字元與零寬字元的 `printf` | 帶終端機控制碼與不可見字元的工具結果 |
+| `advisor` | 使用 `--advisor opus`，要求呼叫一次 advisor | `server_tool_use` 與 `advisor_tool_result` 區塊，結論是加密的 |
+| `workflow` | 要求一個只有一個階段、一個智慧體的 workflow | 帶 `local_workflow` 的 `system/background_tasks_changed`，以及 workflow 的 `system/task_*` 行 |
+| `stop-task` | 在背景執行 `sleep 60`，兩秒後送出 `stop_task` | 帶 `status: stopped` 的 `task_notification`、空的工作清單、`stop_task` 的回覆 |
 
-共有 21 個已錄製的情境。腳本中還有第 22 個 `subagent-permission`，從未錄製過。二十份錄製來自 Claude Code
+共有 25 個已錄製的情境。腳本中還有第 26 個 `subagent-permission`，從未錄製過。二十份錄製來自 Claude Code
 2.1.331；`image` 的錄製來自 2.1.286，因為在 2026-11-25 的重新錄製中，模型沒有開啟圖片就作答了，而先前的
 錄製是唯一一份工具結果中帶有圖片的錄製。
+`bash-ansi`、`advisor`、`workflow` 與 `stop-task` 的錄製來自 2.1.330：它們是在 Claude Visual Chat 中錄製
+並從那裡帶過來的。
 
 ## 預期結果
 
@@ -88,7 +94,7 @@ fixture 是真實 `claude -p` 工作階段的錄製，保存在
 
 ### 通過代表什麼
 
-42 份預期結果是由 .NET 程式庫寫出的。通過它們，證明一個程式庫讀取錄製的方式與 .NET 程式庫相同，而且行為的
+50 份預期結果是由 .NET 程式庫寫出的。通過它們，證明一個程式庫讀取錄製的方式與 .NET 程式庫相同，而且行為的
 變化會以差異呈現。光憑這一點，並不能證明每個欄位都是對的。有三個情境（`edit`、`denied` 與 `mode-and-model`）
 以一個讀取原始錄製的腳本從外部核對過。錄製涵蓋了讀取器 36 種事件中的 27 種；另外九種見
 [事件](../eventos/#沒有任何錄製涵蓋的事件)。
@@ -99,11 +105,14 @@ fixture 是真實 `claude -p` 工作階段的錄製，保存在
 
 - 把資料夾、家目錄與使用者名稱換成 `demo` 的（`C:\demo\app`、`C:\Users\demo`），即使路徑被拆在一個區塊的
   多個 delta 中也一樣；
+- 把 Claude Code 在 `Temp\claude` 下建立的專案資料夾換成 `demo` 資料夾的名稱（`C--demo-app`）：從
+  2.1.330 起，這個資料夾的名稱是由錄製者的資料夾得出的 16 位十六進位數字；
+- 把所有 `encrypted_content`（例如 advisor 結論中的）換成 `redacted`；
 - 在 `system/init` 行中只保留已知的欄位，並移除 `mcp__` 工具；
 - 在 `initialize`、`get_settings` 與 `get_context_usage` 的回覆中只保留已知的欄位，並移除帳戶；
 - 移除 `rate_limit_event` 行（它們屬於錄製者的帳戶）以及 `result` 中的 `credential_expires_at`。
 
-隱私測試（`FixturePrivacyTests`）會在每個檔案中尋找其他使用者的資料夾、看起來像憑證的內容與電子郵件地址，並
+隱私測試（`FixturePrivacyTests`）會在每個檔案中尋找其他使用者的資料夾、以雜湊命名的專案資料夾、看起來像憑證的內容與電子郵件地址，並
 說明在哪一行、哪個欄位找到，但不顯示值。兩者都不理解對話的文字：錄製者在送出前要自己讀過錄製。
 
 ## 每週重新錄製
