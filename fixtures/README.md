@@ -6,14 +6,22 @@ esperado.
 
 ## Estado
 
-A pasta tem 42 gravações: 21 cenários, dois arquivos cada. Foram gravadas pelo `tools/gravar.py`
-do [Claude Visual Chat](https://github.com/carlosdealmeida/claude-visual-chat) e copiadas de lá,
-byte a byte, do commit `16809aa`, em 2026-11-22. Cada gravação tem ao lado o seu resultado
-esperado (`.expected.json`), 42 arquivos gerados pela lib .NET em 2026-11-23.
+A pasta tem 50 gravações: 25 cenários, dois arquivos cada. Vinte e um cenários foram gravados pelo
+`tools/gravar.py` do [Claude Visual Chat](https://github.com/carlosdealmeida/claude-visual-chat) e
+copiados de lá, byte a byte, do commit `16809aa`, em 2026-11-22. Quatro (`bash-ansi`, `advisor`,
+`workflow` e `stop-task`) vieram do mesmo repositório em 2026-11-27, do commit `c67e42b`, gravados
+com o Claude Code 2.1.330. Cada gravação tem ao lado o seu resultado esperado (`.expected.json`),
+50 arquivos gerados pela lib .NET.
 
 Os cenários: `edit`, `bash`, `subagent`, `error`, `denied`, `interrupted`, `mode-and-model`,
 `image`, `commands`, `effort`, `plan`, `plan-auto`, `plan-feedback`, `queued`, `hook-blocked`,
-`queued-compact`, `error-long`, `error-wrapped`, `denied-long`, `hook-ask` e `seguranca`.
+`queued-compact`, `error-long`, `error-wrapped`, `denied-long`, `hook-ask`, `seguranca`,
+`bash-ansi`, `advisor`, `workflow` e `stop-task`.
+
+Em 2026-11-27 a gravação `subagent` foi higienizada de novo (`--re-higienizar`): ela tinha a pasta
+de projeto que o Claude Code 2.1.330 passou a criar sob `Temp\claude` com 16 dígitos hexadecimais
+tirados da pasta de quem gravou. O gravador agora troca esse nome pelo da pasta de `demo`, e o
+teste de privacidade o procura.
 
 ## O que entra aqui
 
@@ -43,14 +51,12 @@ de uma linguagem só.
 Um evento por linha do arquivo, para uma mudança aparecer como uma linha no diff.
 
 **Os nomes são os dos arquivos.** Os nomes de evento e de campo deste formato são os que aparecem
-nos 42 arquivos esperados, e são eles a referência, não os nomes do stream. Alguns diferem do que
+nos 50 arquivos esperados, e são eles a referência, não os nomes do stream. Alguns diferem do que
 o `claude` escreve: `working_directory` é o `cwd` da linha `system/init`, e `claude_version` é o
 `claude_code_version`. Uma lib em outra linguagem copia os nomes daqui.
 
 - **Como ler a gravação:** uma linha do arquivo é uma linha do stream. As linhas são separadas por
-  `
-`; um `
-` no fim é ignorado, e uma linha em branco não conta. O `.stream.ndjson` é lido com
+  `\n`; um `\n` no fim é ignorado, e uma linha em branco não conta. O `.stream.ndjson` é lido com
   **um leitor por arquivo, que guarda estado entre as linhas** (o `message_id` do último
   `message_start` de cada conversa, para os deltas que vêm depois). O `.transcript.jsonl` é lido
   linha a linha, sem estado.
@@ -69,8 +75,8 @@ o `claude` escreve: `working_directory` é o `cwd` da linha `system/init`, e `cl
   `user_block` e o `response` de um `control_acknowledged`.
 - **Lista:** um array, na ordem em que os itens vieram. **Objeto aninhado:** segue a mesma regra
   dos campos.
-- **Bloco de conteúdo:** um objeto com `"kind"` (`text`, `thinking`, `tool_use`, `tool_result` ou
-  `image`) e os campos dele.
+- **Bloco de conteúdo:** um objeto com `"kind"` (`text`, `thinking`, `tool_use`, `tool_result`,
+  `image`, `advisor_use` ou `advisor_result`) e os campos dele.
 - **Imagem:** o `data` não vai inteiro. Vira `{"length": <caracteres do base64>, "sha256": "<hex
   minúsculo dos bytes UTF-8 do texto base64>"}`.
 
@@ -86,14 +92,14 @@ eventos que nenhuma gravação exercita (lista abaixo) numa seção à parte. O 
 
 ### De onde vêm e o que provam
 
-Os 42 arquivos foram escritos pela própria lib .NET. Por isso, passar neles prova duas coisas e
+Os 50 arquivos foram escritos pela própria lib .NET. Por isso, passar neles prova duas coisas e
 só essas: que as duas builds da lib (`net6.0` e `netstandard2.0`) dão o mesmo resultado, e que uma
 mudança de comportamento aparece como diferença. Não prova, sozinho, que cada campo está certo.
 Três cenários (`edit`, `denied` e `mode-and-model`) foram conferidos por fora, com um script que
 lê a gravação crua: o início da sessão, cada pedido de permissão com o `input` inteiro e cada fim
-de turno com os tokens somados. Os outros 39 estão como foram gerados.
+de turno com os tokens somados. Os outros estão como foram gerados.
 
-As gravações exercitam 27 dos 36 tipos de evento que os leitores produzem (um 37º,
+As gravações exercitam 28 dos 37 tipos de evento que os leitores produzem (um 38º,
 `control_replied`, é da sessão e não sai de um leitor). Não aparecem em nenhuma:
 `hook_started`, `hook_finished`, `command_lifecycle`, `per_turn_effort_changed`,
 `usage_limits_reported`, `account_reported`, `remote_control_changed`, `model_refusal_fallback`
@@ -141,7 +147,7 @@ de `demo`, e a linha `system/init` fica só com os campos conhecidos. **Gravar u
 Depois de gravar, escreva de novo o resultado esperado (o comando com `CCP_UPDATE_EXPECTED=1`,
 acima), leia o diff das gravações e dos esperados e rode os testes.
 
-O roteiro tem 22 cenários, e 21 têm gravação. O `subagent-permission` está no roteiro e nunca foi
+O roteiro tem 26 cenários, e 25 têm gravação. O `subagent-permission` está no roteiro e nunca foi
 gravado.
 
 ## Regravação semanal

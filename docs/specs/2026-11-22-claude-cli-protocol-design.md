@@ -287,7 +287,7 @@ terceiros.
 | 0 | O esqueleto no padrão: pastas, READMEs nos cinco idiomas, SECURITY, CONTRIBUTING, RELEASING, CHANGELOG, LICENSE, templates, os quatro workflows e o site com o build passando | claude-cli-protocol |
 | 1 | O `Protocol/` do CVC em `libs/dotnet`, comandos como dados, `ClaudeSession`, `ReplayTransport`, testes contra as fixtures que já existem no CVC | claude-cli-protocol |
 | 2 | `ProcessTransport` e o exemplo de console; o gravador e a regravação semanal das fixtures | claude-cli-protocol |
-| 3 | CVC 0.11 sobre a lib | claude-visual-chat |
+| 3 | CVC 0.12 sobre a lib 0.2 (ver "Decidido em 2026-11-27") | claude-cli-protocol e claude-visual-chat |
 | 4 | O aplicativo sobre o CVC novo, com o transporte por rede dele (só referência) | repositório privado |
 | 5 | A especificação no Starlight: protocolo, comandos, controle, transporte, fixtures | claude-cli-protocol |
 | 6 | Lib em Delphi: processo com pipes, parser e eventos, passando nas mesmas fixtures | claude-cli-protocol |
@@ -436,3 +436,35 @@ Achados na leitura do código, com a resposta do dono do projeto a cada um.
     gravação são regravados. Os resultados esperados são reescritos pela própria lib, então o que
     barra uma gravação ruim é a leitura do pull request por uma pessoa, junto com as esperas do
     gravador e o teste de privacidade (pasta de outro usuário, credencial, e-mail).
+
+## Decidido em 2026-11-27 (fase 3)
+
+Conferido no `claude-visual-chat`, commit `c67e42b` (0.11.1). O plano é o
+[2026-11-27-fase-3-cvc-sobre-a-lib](../plans/2026-11-27-fase-3-cvc-sobre-a-lib.md).
+
+28. **A fase 3 são duas versões: lib 0.2.0 e CVC 0.12.0.** O CVC 0.11.0 e o 0.11.1 saíram sem a
+    lib, e o `Protocol/` dele andou depois do commit `16809aa`: os blocos do advisor, o evento
+    `BackgroundTasksChanged`, o pedido `stop_task` e quatro cenários gravados. A lib alcança o CVC
+    primeiro; depois o CVC passa a depender dela. O CVC é portado contra um pacote local da lib
+    antes de a 0.2.0 ser publicada, para que o que faltar entre nela.
+29. **`ContextBlock` e `UserBlock.Context` são públicos.** Isso desfaz uma parte da decisão 3. O
+    parser tira os blocos de contexto da IDE do texto e os guarda só ali; com a lib em outro
+    assembly, o CVC não tem de onde recalculá-los. `ContextBlockReader` continua interno. O campo
+    `context` entra no resultado esperado de todo `user_block`.
+30. **`JsonHelpers` e `TaskNotificationText` continuam internos** (decisão 3). O CVC fica com uma
+    cópia interna de cada um.
+31. **`AdvisorOutcome` é da lib, e o CVC usa o `PermissionDecision` da lib.** Um host importa os
+    dois namespaces; dois enums com o mesmo nome dariam erro de ambiguidade em todo arquivo que os
+    usa.
+32. **`ClaudeVisualChat.Protocol.StdinMessages` continua no CVC,** com as mesmas assinaturas e as
+    mesmas linhas, escrito sobre o `StdinWriter` (decisão 1). Os `EventArgs` da tela ganham
+    `ToCommand()`, que é a conversão que esta spec deixa no CVC.
+33. **O gravador sai do CVC.** O deste repositório é o que roda toda semana. As gravações de
+    `tests/fixtures` do CVC continuam lá, como estão, porque os testes de tela e o sample as usam.
+    Um cenário novo é gravado aqui e copiado.
+34. **Os blocos do advisor no resultado esperado** têm `kind` `advisor_use` e `advisor_result`: o
+    nome do record sem `Block`, como os outros.
+35. **A pasta de projeto de nome em hash é dado de quem gravou.** Desde o Claude Code 2.1.330, a
+    pasta sob `Temp\claude` tem 16 dígitos hexadecimais tirados da pasta de trabalho. O gravador a
+    troca pelo nome da pasta de `demo`, e o teste de privacidade a procura. A gravação `subagent`,
+    que a tinha, foi higienizada de novo em 2026-11-27.
