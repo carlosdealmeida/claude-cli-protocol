@@ -863,5 +863,28 @@ namespace ClaudeCliProtocol.Tests.Protocol
             // without a state it says nothing
             Assert.Empty(parser.Parse("{\"type\":\"system\",\"subtype\":\"peer_message_hold\",\"from\":\"sess-a\"}"));
         }
+
+        [Fact]
+        public void Background_tasks_changed_lists_its_tasks()
+        {
+            var parser = new StreamJsonParser();
+            var two = Assert.IsType<BackgroundTasksChanged>(Assert.Single(parser.Parse(
+                "{\"type\":\"system\",\"subtype\":\"background_tasks_changed\",\"tasks\":[{\"task_id\":\"wqiav2s4i\",\"run_id\":\"0mwsexcx4-22374a5d\",\"task_type\":\"local_workflow\",\"description\":\"Spawn one agent\"},{\"task_id\":\"b7\",\"task_type\":\"local_bash\",\"description\":\"sleep 60\"}],\"uuid\":\"u\",\"session_id\":\"s\"}")));
+            Assert.Equal(
+                new[] { new BackgroundTaskEntry("wqiav2s4i", "local_workflow", "Spawn one agent"), new BackgroundTaskEntry("b7", "local_bash", "sleep 60") },
+                two.Tasks);
+
+            var none = Assert.IsType<BackgroundTasksChanged>(Assert.Single(parser.Parse(
+                "{\"type\":\"system\",\"subtype\":\"background_tasks_changed\",\"tasks\":[],\"uuid\":\"u\",\"session_id\":\"s\"}")));
+            Assert.Empty(none.Tasks);
+
+            // an entry without a task id is skipped; one without a type or a description has them empty
+            var skipped = Assert.IsType<BackgroundTasksChanged>(Assert.Single(parser.Parse(
+                "{\"type\":\"system\",\"subtype\":\"background_tasks_changed\",\"tasks\":[{\"task_type\":\"local_workflow\",\"description\":\"x\"},{\"task_id\":\"\",\"task_type\":\"local_bash\"},{\"task_id\":\"b1\"}]}")));
+            Assert.Equal(new[] { new BackgroundTaskEntry("b1", "", "") }, skipped.Tasks);
+
+            // a line without the list says nothing
+            Assert.Empty(parser.Parse("{\"type\":\"system\",\"subtype\":\"background_tasks_changed\",\"uuid\":\"u\"}"));
+        }
     }
 }
