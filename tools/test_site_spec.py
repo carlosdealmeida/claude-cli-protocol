@@ -165,12 +165,12 @@ class SpecPages(unittest.TestCase):
             if event in expected:
                 continue
             # a row of the tables of content blocks is not an event
-            if event in ("text", "thinking", "tool_use", "tool_result", "image"):
+            if event in ("text", "thinking", "tool_use", "tool_result", "image", "advisor_use", "advisor_result"):
                 continue
             self.assertIn(event, SESSION_EVENTS | set(unrecorded), event + " is listed as recorded")
         for event in unrecorded:
             self.assertNotIn(event, expected, event + " is recorded: move it up")
-        self.assertEqual(36, len(expected) + len(unrecorded), "the readers produce 36 kinds of event")
+        self.assertEqual(37, len(expected) + len(unrecorded), "the readers produce 37 kinds of event")
 
 
 if __name__ == "__main__":

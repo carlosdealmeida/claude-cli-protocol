@@ -6,7 +6,7 @@ description: As gravações de sessões de verdade do claude -p, o resultado esp
 As fixtures são gravações de sessões de verdade do `claude -p`, guardadas em
 [`fixtures/`](https://github.com/carlosdealmeida/claude-cli-protocol/tree/master/fixtures). **A
 conformidade é delas:** uma lib, em qualquer linguagem, fala o protocolo quando lê cada gravação e
-produz o resultado esperado ao lado dela. A lib .NET passa nas 42; a de Delphi vai passar nas mesmas.
+produz o resultado esperado ao lado dela. A lib .NET passa nas 50; a de Delphi vai passar nas mesmas.
 
 ## Os arquivos
 
@@ -47,11 +47,16 @@ de cada cenário, em `tools/cenarios.json`.
 | `error-long` | Roda um comando que imprime 40 linhas no stderr e sai com 3 | Um resultado de erro longo, `decision_reason` de conferência |
 | `error-wrapped` | Pede um `Edit` de um texto que não existe | O erro da ferramenta |
 | `seguranca` | Pede um `Write` em `.claude/settings.local.json`; nega | `decision_reason_type: safetyCheck` |
+| `bash-ansi` | Roda um `printf` com cores de terminal, um sinal sonoro e um caractere de largura zero | Um resultado de ferramenta com códigos de terminal e caracteres invisíveis |
+| `advisor` | Pede uma chamada ao advisor, com `--advisor opus` | Os blocos `server_tool_use` e `advisor_tool_result`, com o veredito cifrado |
+| `workflow` | Pede um workflow de uma fase, com um agent | `system/background_tasks_changed` com `local_workflow`, as linhas `system/task_*` do workflow |
+| `stop-task` | Roda `sleep 60` em segundo plano e manda `stop_task` dois segundos depois | `task_notification` com `status: stopped`, a lista de tarefas vazia, a resposta do `stop_task` |
 
-São 21 cenários gravados. O roteiro tem um 22º, `subagent-permission`, que nunca foi gravado.
+São 25 cenários gravados. O roteiro tem um 26º, `subagent-permission`, que nunca foi gravado.
 Vinte gravações são do Claude Code 2.1.331; a do `image` é do 2.1.286, porque na regravação de
 2026-11-25 o modelo respondeu sem abrir a imagem, e a gravação anterior é a única com um resultado
-de ferramenta que traz uma imagem.
+de ferramenta que traz uma imagem. As de `bash-ansi`, `advisor`, `workflow` e `stop-task` são do
+2.1.330: foram gravadas no Claude Visual Chat e vieram de lá.
 
 ## O resultado esperado
 
@@ -90,7 +95,7 @@ As linhas são separadas por `\n`; um `\n` no fim é ignorado, e uma linha em br
 
 ### O que passar prova
 
-Os 42 resultados esperados foram escritos pela lib .NET. Passar neles prova que uma lib lê as
+Os 50 resultados esperados foram escritos pela lib .NET. Passar neles prova que uma lib lê as
 gravações como a lib .NET lê, e que uma mudança de comportamento aparece como diferença. Não prova,
 sozinho, que cada campo está certo. Três cenários (`edit`, `denied` e `mode-and-model`) foram
 conferidos por fora, com um script que lê a gravação crua. As gravações exercitam 27 dos 36 tipos
@@ -104,6 +109,10 @@ Uma gravação é uma sessão de verdade, e nenhuma entra com dado pessoal de qu
 
 - troca a pasta, a home e o nome do usuário pelos de `demo` (`C:\demo\app`,
   `C:\Users\demo`), também quando um caminho chega partido entre vários deltas de um bloco;
+- troca pelo nome da pasta de `demo` (`C--demo-app`) a pasta de projeto que o Claude Code cria sob
+  `Temp\claude`, cujo nome, desde o 2.1.330, são 16 dígitos hexadecimais tirados da pasta de quem
+  gravou;
+- troca por `redacted` todo `encrypted_content`, como o do veredito do advisor;
 - deixa na linha `system/init` só os campos conhecidos, e tira as ferramentas `mcp__`;
 - deixa nas respostas do `initialize`, do `get_settings` e do `get_context_usage` só os campos
   conhecidos, e tira a conta;
@@ -111,7 +120,7 @@ Uma gravação é uma sessão de verdade, e nenhuma entra com dado pessoal de qu
   `result`.
 
 O teste de privacidade (`FixturePrivacyTests`) procura em cada arquivo uma pasta de outro usuário,
-o que pareça uma credencial e um endereço de e-mail, e diz em que linha e em que campo achou, sem
+uma pasta de projeto com nome em hash, o que pareça uma credencial e um endereço de e-mail, e diz em que linha e em que campo achou, sem
 mostrar o valor. Nenhum dos dois entende o texto da conversa: quem grava lê a gravação antes de
 mandar.
 
