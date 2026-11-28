@@ -150,6 +150,25 @@ acima), leia o diff das gravações e dos esperados e rode os testes.
 O roteiro tem 26 cenários, e 25 têm gravação. O `subagent-permission` está no roteiro e nunca foi
 gravado.
 
+Um cenário também pode definir, no roteiro:
+
+- `modelo_cli`: o modelo com que roda (`haiku` quando ausente);
+- `argumentos`: argumentos postos no fim da linha de comando do `claude`. O cenário `advisor` passa
+  `["--advisor", "opus", "--max-turns", "3"]` e custa cerca de 20 centavos de dólar, porque o
+  advisor roda no opus;
+- `ambiente`: variáveis de ambiente só daquele `claude`;
+- o passo `{"parar_tarefa_apos_s": N}`: espera até 60 s pela primeira tarefa listada em
+  `system/background_tasks_changed`, deixa-a rodar N segundos e a para com o pedido `stop_task`
+  (id `stop-<passo>`).
+
+Três esperas conferem essas gravações: `advisor` (um bloco `server_tool_use` de nome `advisor` e um
+bloco `advisor_tool_result`), `tarefa:<task_type>` (uma tarefa em segundo plano desse tipo, como
+`local_workflow`, e depois dela uma lista de tarefas vazia) e `tarefa_parada` (uma resposta de
+sucesso a um pedido `stop-` e um `task_notification` com status `stopped`).
+
+Desde a versão 0.12.0 do Claude Visual Chat, este é o único gravador: o de lá saiu. Um cenário novo
+é gravado aqui, e os dois arquivos dele são copiados para o `tests/fixtures` de lá.
+
 ## Regravação semanal
 
 O workflow `.github/workflows/fixtures.yml` roda toda segunda-feira, em dois jobs. O primeiro grava,
